@@ -41,7 +41,7 @@ import org.gradle.api.tasks.options.OptionValues
 import org.gradle.integtests.fixtures.AbstractDependencyResolutionTest
 import org.gradle.internal.reflect.Instantiator
 import org.gradle.internal.reflect.problems.ValidationProblemId
-import org.gradle.internal.reflect.validation.DocumentationLinkChecker
+import org.gradle.internal.reflect.validation.ValidationMessageChecker
 import org.gradle.internal.reflect.validation.ValidationTestFor
 import org.gradle.process.ExecOperations
 import spock.lang.Unroll
@@ -51,7 +51,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import static org.gradle.util.Matchers.matchesRegexp
 import static org.hamcrest.Matchers.containsString
 
-class ArtifactTransformValuesInjectionIntegrationTest extends AbstractDependencyResolutionTest implements ArtifactTransformTestFixture, DocumentationLinkChecker {
+class ArtifactTransformValuesInjectionIntegrationTest extends AbstractDependencyResolutionTest implements ArtifactTransformTestFixture, ValidationMessageChecker {
 
     @Unroll
     def "transform can receive parameters, workspace and input artifact (#inputArtifactType) via abstract getter"() {
@@ -305,9 +305,11 @@ class ArtifactTransformValuesInjectionIntegrationTest extends AbstractDependency
         ].collect { it.name }
     }
 
-    @ValidationTestFor(
-        ValidationProblemId.MISSING_NORMALIZATION_ANNOTATION
-    )
+    @ValidationTestFor([
+        ValidationProblemId.MISSING_NORMALIZATION_ANNOTATION,
+        ValidationProblemId.CACHEABLE_TRANSFORM_CANT_USE_ABSOLUTE_SENSITIVITY,
+        ValidationProblemId.VALUE_NOT_SET
+    ])
     def "transform parameters are validated for input output annotations"() {
         settingsFile << """
             include 'a', 'b'
@@ -393,17 +395,17 @@ class ArtifactTransformValuesInjectionIntegrationTest extends AbstractDependency
         failure.assertHasCause('Some problems were found with the configuration of the artifact transform parameter MakeGreen.Parameters.')
         String missingNormalizationDetails = "If you don't declare the normalization, outputs can't be re-used between machines or locations on the same machine, therefore caching efficiency drops significantly. Possible solution: Declare the normalization strategy by annotating the property with either @PathSensitive, @Classpath or @CompileClasspath. ${learnAt('validation_problems', 'missing_normalization_annotation')}"
         assertPropertyValidationErrors(
-            absolutePathSensitivity: 'is declared to be sensitive to absolute paths. This is not allowed for cacheable transforms',
+            absolutePathSensitivity: invalidUseOfAbsoluteNormalizationMessage,
             extension: 'is not annotated with an input annotation',
             fileInput: [
-                'does not have a value specified',
+                missingValueMessage('fileInput', false),
                 'has @Input annotation used on property of type \'File\'',
             ],
             incrementalNonFileInput: [
-                'does not have a value specified',
+                missingValueMessage('incrementalNonFileInput', false),
                 'is annotated with @Incremental that is not allowed for @Input properties',
             ],
-            missingInput: 'does not have a value specified',
+            missingInput: missingValueMessage('missingInput', false),
             'nested.outputDirectory': 'is annotated with invalid property type @OutputDirectory',
             'nested.inputFile': "is annotated with @InputFile but missing a normalization strategy. $missingNormalizationDetails",
             'nested.stringProperty': 'is not annotated with an input annotation',
@@ -579,9 +581,10 @@ class ArtifactTransformValuesInjectionIntegrationTest extends AbstractDependency
         annotation << [InputArtifact, InputArtifactDependencies]
     }
 
-    @ValidationTestFor(
-        ValidationProblemId.MISSING_NORMALIZATION_ANNOTATION
-    )
+    @ValidationTestFor([
+        ValidationProblemId.MISSING_NORMALIZATION_ANNOTATION,
+        ValidationProblemId.CACHEABLE_TRANSFORM_CANT_USE_ABSOLUTE_SENSITIVITY
+    ])
     def "transform action is validated for input output annotations"() {
         settingsFile << """
             include 'a', 'b', 'c'
@@ -636,7 +639,7 @@ class ArtifactTransformValuesInjectionIntegrationTest extends AbstractDependency
         failure.assertHasDescription('A problem occurred evaluating root project')
         failure.assertHasCause('Some problems were found with the configuration of MakeGreen.')
         assertPropertyValidationErrors(
-            absolutePathSensitivityDependencies: 'is declared to be sensitive to absolute paths. This is not allowed for cacheable transforms',
+            absolutePathSensitivityDependencies: invalidUseOfAbsoluteNormalizationMessage,
             'conflictingAnnotations': [
                 'has conflicting type annotations declared: @InputFile, @InputArtifact, @InputArtifactDependencies; assuming @InputFile',
                 'is annotated with invalid property type @InputFile'
@@ -1059,9 +1062,17 @@ abstract class MakeGreen implements TransformAction<TransformParameters.None> {
             errorMessages.each { errorMessage ->
                 count++
                 System.err.println("Verifying assertion for $propertyName")
-                failure.assertHasCause("Property '${propertyName}' ${errorMessage}.")
+                if (!errorMessage.endsWith('.')) {
+                    // be tolerant with the missing dot at the end of expected error messages
+                    errorMessage = "${errorMessage}."
+                }
+                failure.assertHasCause("Property '${propertyName}' ${errorMessage}")
             }
         }
         assert errorOutput.count("> Property") == count
+    }
+
+    private String getInvalidUseOfAbsoluteNormalizationMessage() {
+        "is declared to be sensitive to absolute paths. This is not allowed for cacheable transforms. Possible solution: Use a different normalization strategy via @PathSensitive, @Classpath or @CompileClasspath. ${learnAt('validation_problems', 'cacheable_transform_cant_use_absolute_sensitivity')}"
     }
 }

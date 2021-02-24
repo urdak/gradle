@@ -39,6 +39,9 @@ import org.gradle.internal.execution.WorkValidationExceptionChecker
 import org.gradle.internal.reflect.DirectInstantiator
 import org.gradle.internal.reflect.JavaReflectionUtil
 import org.gradle.internal.reflect.annotations.impl.DefaultTypeAnnotationMetadataStore
+import org.gradle.internal.reflect.problems.ValidationProblemId
+import org.gradle.internal.reflect.validation.ValidationMessageChecker
+import org.gradle.internal.reflect.validation.ValidationTestFor
 import org.gradle.internal.service.ServiceRegistryBuilder
 import org.gradle.internal.service.scopes.ExecutionGlobalServices
 import org.gradle.test.fixtures.AbstractProjectBuilderSpec
@@ -103,7 +106,7 @@ import static org.gradle.api.internal.project.taskfactory.AnnotationProcessingTa
 import static org.gradle.internal.service.scopes.ExecutionGlobalServices.IGNORED_METHOD_ANNOTATIONS
 import static org.gradle.internal.service.scopes.ExecutionGlobalServices.PROPERTY_TYPE_ANNOTATIONS
 
-class AnnotationProcessingTaskFactoryTest extends AbstractProjectBuilderSpec {
+class AnnotationProcessingTaskFactoryTest extends AbstractProjectBuilderSpec implements ValidationMessageChecker {
     private AnnotationProcessingTaskFactory factory
     private ITaskFactory delegate
     def services = ServiceRegistryBuilder.builder().provider(new ExecutionGlobalServices()).build()
@@ -332,12 +335,12 @@ class AnnotationProcessingTaskFactoryTest extends AbstractProjectBuilderSpec {
         execute(task)
 
         where:
-        type                | property       | value
-        TaskWithInputFile   | 'input-file'   | 'existingFile'
-        TaskWithOutputFile  | 'output-file'  | 'existingFile'
-        TaskWithOutputDir   | 'output-dir'   | 'existingDir'
-        TaskWithInputDir    | 'input-dir'    | 'existingDir'
-        TaskWithInput       | 'input'        | 'inputValue'
+        type               | property      | value
+        TaskWithInputFile  | 'input-file'  | 'existingFile'
+        TaskWithOutputFile | 'output-file' | 'existingFile'
+        TaskWithOutputDir  | 'output-dir'  | 'existingDir'
+        TaskWithInputDir   | 'input-dir'   | 'existingDir'
+        TaskWithInput      | 'input'       | 'inputValue'
     }
 
     @Unroll
@@ -421,6 +424,9 @@ class AnnotationProcessingTaskFactoryTest extends AbstractProjectBuilderSpec {
     }
 
     @Unroll
+    @ValidationTestFor(
+        ValidationProblemId.VALUE_NOT_SET
+    )
     def "validation fails for unspecified #property for #type.simpleName"() {
         given:
         def task = expectTaskCreated(type, [null] as Object[])
@@ -430,7 +436,8 @@ class AnnotationProcessingTaskFactoryTest extends AbstractProjectBuilderSpec {
 
         then:
         def e = thrown WorkValidationException
-        validateException(task, e, "No value has been specified for property '$property'.")
+        String expectedMessage = missingValueMessage(property)
+        validateException(task, e, expectedMessage)
 
         where:
         type                | property
@@ -570,6 +577,9 @@ class AnnotationProcessingTaskFactoryTest extends AbstractProjectBuilderSpec {
         validateException(task, e, "Directory '$task.inputDir' specified for property 'inputDir' is not a directory.")
     }
 
+    @ValidationTestFor(
+        ValidationProblemId.VALUE_NOT_SET
+    )
     def validatesNestedBeansWithPrivateType() {
         given:
         def task = expectTaskCreated(TaskWithNestedBeanWithPrivateClass, [existingFile, null] as Object[])
@@ -579,9 +589,12 @@ class AnnotationProcessingTaskFactoryTest extends AbstractProjectBuilderSpec {
 
         then:
         def e = thrown WorkValidationException
-        validateException(task, e, "No value has been specified for property 'bean.inputFile'.")
+        validateException(task, e, missingValueMessage('bean.inputFile'))
     }
 
+    @ValidationTestFor(
+        ValidationProblemId.VALUE_NOT_SET
+    )
     def validationFailsWhenNestedBeanIsNull() {
         given:
         def task = expectTaskCreated(TaskWithNestedBean, [null] as Object[])
@@ -592,9 +605,12 @@ class AnnotationProcessingTaskFactoryTest extends AbstractProjectBuilderSpec {
 
         then:
         def e = thrown WorkValidationException
-        validateException(task, e, "No value has been specified for property 'bean'.")
+        validateException(task, e, missingValueMessage('bean'))
     }
 
+    @ValidationTestFor(
+        ValidationProblemId.VALUE_NOT_SET
+    )
     def validationFailsWhenNestedBeanWithPrivateTypeIsNull() {
         given:
         def task = expectTaskCreated(TaskWithNestedBeanWithPrivateClass, [null, null] as Object[])
@@ -605,9 +621,12 @@ class AnnotationProcessingTaskFactoryTest extends AbstractProjectBuilderSpec {
 
         then:
         def e = thrown WorkValidationException
-        validateException(task, e, "No value has been specified for property 'bean'.")
+        validateException(task, e, missingValueMessage('bean'))
     }
 
+    @ValidationTestFor(
+        ValidationProblemId.VALUE_NOT_SET
+    )
     def canAttachAnnotationToGroovyProperty() {
         given:
         def task = expectTaskCreated(InputFileTask)
@@ -617,7 +636,7 @@ class AnnotationProcessingTaskFactoryTest extends AbstractProjectBuilderSpec {
 
         then:
         def e = thrown WorkValidationException
-        validateException(task, e, "No value has been specified for property 'srcFile'.")
+        validateException(task, e, missingValueMessage('srcFile'))
     }
 
     def validationFailureListsViolationsForAllProperties() {
@@ -630,10 +649,13 @@ class AnnotationProcessingTaskFactoryTest extends AbstractProjectBuilderSpec {
         then:
         def e = thrown WorkValidationException
         validateException(task, e,
-            "No value has been specified for property 'outputFile'.",
-            "No value has been specified for property 'bean.inputFile'.")
+            missingValueMessage('outputFile'),
+            missingValueMessage('bean.inputFile'))
     }
 
+    @ValidationTestFor(
+        ValidationProblemId.VALUE_NOT_SET
+    )
     def propertyValidationJavaBeanSpecCase() {
         given:
         def task = expectTaskCreated(TaskWithJavaBeanCornerCaseProperties, [null, null, null, null, "a", "b"] as Object[])
@@ -644,12 +666,15 @@ class AnnotationProcessingTaskFactoryTest extends AbstractProjectBuilderSpec {
         then:
         def e = thrown WorkValidationException
         validateException(task, e,
-            "No value has been specified for property 'cCompiler'.",
-            "No value has been specified for property 'CFlags'.",
-            "No value has been specified for property 'dns'.",
-            "No value has been specified for property 'URL'.")
+            missingValueMessage('cCompiler'),
+            missingValueMessage('CFlags'),
+            missingValueMessage('dns'),
+            missingValueMessage('URL'))
     }
 
+    @ValidationTestFor(
+        ValidationProblemId.VALUE_NOT_SET
+    )
     def propertyValidationJavaBeanSpecSingleChar() {
         given:
         def task = expectTaskCreated(TaskWithJavaBeanCornerCaseProperties, ["c", "C", "d", "U", null, null] as Object[])
@@ -660,8 +685,8 @@ class AnnotationProcessingTaskFactoryTest extends AbstractProjectBuilderSpec {
         then:
         def e = thrown WorkValidationException
         validateException(task, e,
-            "No value has been specified for property 'a'.",
-            "No value has been specified for property 'b'.")
+            missingValueMessage('a'),
+            missingValueMessage('b'))
     }
 
     @Unroll
