@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.samWithReceiver.gradle.SamWithReceiverGradleSubplugi
 class KotlinDslCompilerPlugins : Plugin<Project> {
 
     override fun apply(project: Project): Unit = project.run {
+        System.setProperty("kotlin.daemon.jvm.options", "--illegal-access=permit")
 
         plugins.apply(SamWithReceiverGradleSubplugin::class.java)
         extensions.configure(SamWithReceiverExtension::class.java) { samWithReceiver ->
