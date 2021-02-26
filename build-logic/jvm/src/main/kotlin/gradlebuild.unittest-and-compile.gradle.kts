@@ -211,6 +211,7 @@ fun configureTests() {
 
         configureJvmForTest()
         addOsAsInputs()
+        outputs.cacheIf { false }
 
         val testName = name
 
