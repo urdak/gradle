@@ -400,7 +400,7 @@
     "linux" : 456000
   } ]
 }, {
-  "scenario" : "org.gradle.performance.regression.java.JavaIncrementalExecutionIntegrationTest.assemble for abi change",
+  "scenario" : "org.gradle.performance.regression.java.JavaIncrementalExecutionPerformanceTest.assemble for abi change",
   "durations" : [ {
     "testProject" : "largeGroovyMultiProject",
     "linux" : 663000
@@ -417,7 +417,7 @@
     "linux" : 928000
   } ]
 }, {
-  "scenario" : "org.gradle.performance.regression.java.JavaIncrementalExecutionIntegrationTest.assemble for abi change with configuration caching",
+  "scenario" : "org.gradle.performance.regression.java.JavaIncrementalExecutionPerformanceTest.assemble for abi change with configuration caching",
   "durations" : [ {
     "testProject" : "largeJavaMultiProject",
     "linux" : 343000,
@@ -425,7 +425,7 @@
     "macOs" : 658000
   } ]
 }, {
-  "scenario" : "org.gradle.performance.regression.java.JavaIncrementalExecutionIntegrationTest.assemble for non-abi change",
+  "scenario" : "org.gradle.performance.regression.java.JavaIncrementalExecutionPerformanceTest.assemble for non-abi change",
   "durations" : [ {
     "testProject" : "largeGroovyMultiProject",
     "linux" : 577000
@@ -442,7 +442,7 @@
     "linux" : 924000
   } ]
 }, {
-  "scenario" : "org.gradle.performance.regression.java.JavaIncrementalExecutionIntegrationTest.assemble for non-abi change with configuration caching",
+  "scenario" : "org.gradle.performance.regression.java.JavaIncrementalExecutionPerformanceTest.assemble for non-abi change with configuration caching",
   "durations" : [ {
     "testProject" : "largeJavaMultiProject",
     "linux" : 307000,
@@ -450,7 +450,7 @@
     "macOs" : 599000
   } ]
 }, {
-  "scenario" : "org.gradle.performance.regression.java.JavaIncrementalExecutionIntegrationTest.test for non-abi change",
+  "scenario" : "org.gradle.performance.regression.java.JavaIncrementalExecutionPerformanceTest.test for non-abi change",
   "durations" : [ {
     "testProject" : "largeJavaMultiProject",
     "linux" : 612000
@@ -462,7 +462,7 @@
     "linux" : 286000
   } ]
 }, {
-  "scenario" : "org.gradle.performance.regression.java.JavaIncrementalExecutionIntegrationTest.up-to-date assemble (parallel false)",
+  "scenario" : "org.gradle.performance.regression.java.JavaIncrementalExecutionPerformanceTest.up-to-date assemble (parallel false)",
   "durations" : [ {
     "testProject" : "largeJavaMultiProject",
     "linux" : 532000
@@ -471,14 +471,14 @@
     "linux" : 161000
   } ]
 }, {
-  "scenario" : "org.gradle.performance.regression.java.JavaIncrementalExecutionIntegrationTest.up-to-date assemble (parallel true)",
+  "scenario" : "org.gradle.performance.regression.java.JavaIncrementalExecutionPerformanceTest.up-to-date assemble (parallel true)",
   "durations" : [ {
     "testProject" : "largeJavaMultiProject",
     "linux" : 396000,
     "windows" : 780000
   } ]
 }, {
-  "scenario" : "org.gradle.performance.regression.java.JavaIncrementalExecutionIntegrationTest.up-to-date assemble with local build cache enabled (parallel false)",
+  "scenario" : "org.gradle.performance.regression.java.JavaIncrementalExecutionPerformanceTest.up-to-date assemble with local build cache enabled (parallel false)",
   "durations" : [ {
     "testProject" : "largeJavaMultiProject",
     "linux" : 597000
@@ -487,7 +487,7 @@
     "linux" : 172000
   } ]
 }, {
-  "scenario" : "org.gradle.performance.regression.java.JavaIncrementalExecutionIntegrationTest.up-to-date assemble with local build cache enabled (parallel true)",
+  "scenario" : "org.gradle.performance.regression.java.JavaIncrementalExecutionPerformanceTest.up-to-date assemble with local build cache enabled (parallel true)",
   "durations" : [ {
     "testProject" : "largeJavaMultiProject",
     "linux" : 410000
