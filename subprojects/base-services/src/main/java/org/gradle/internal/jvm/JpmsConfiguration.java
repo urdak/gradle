@@ -52,7 +52,6 @@ public class JpmsConfiguration {
         List<String> daemonJpmsJvmArgs = new ArrayList<String>();
         daemonJpmsJvmArgs.addAll(GROOVY_JPMS_JVM_ARGS);
         daemonJpmsJvmArgs.addAll(CONFIGURATION_CACHE_JPMS_JVM_ARGS);
-        daemonJpmsJvmArgs.add("--illegal-access=deny");
         GRADLE_DAEMON_JPMS_JVM_ARGS = Collections.unmodifiableList(daemonJpmsJvmArgs);
     }
 }
