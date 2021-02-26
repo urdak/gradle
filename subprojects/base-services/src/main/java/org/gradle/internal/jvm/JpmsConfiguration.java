@@ -37,9 +37,12 @@ public class JpmsConfiguration {
         "--add-opens", "java.prefs/java.util.prefs=ALL-UNNAMED" // required by PreferenceCleaningGroovySystemLoader
     ));
 
-    public static final List<String> CONFIGURATION_CACHE_JPMS_JVM_ARGS = Collections.unmodifiableList(Arrays.asList(
-        "--add-opens", "java.prefs/java.util.prefs=ALL-UNNAMED", // required by JavaObjectSerializationCodec.kt
-        "--illegal-access=deny"
+    private static final List<String> CONFIGURATION_CACHE_JPMS_JVM_ARGS = Collections.unmodifiableList(Arrays.asList(
+        "--add-opens", "java.prefs/java.util.prefs=ALL-UNNAMED" // required by JavaObjectSerializationCodec.kt
+    ));
+
+    private static final List<String> WORKER_JPMS_JVM_ARGS = Collections.unmodifiableList(Arrays.asList(
+        "--add-opens", "java.base/java.util=ALL-UNNAMED" // required by native platform: WrapperProcess.getEnv
     ));
 
     public static final List<String> GRADLE_DAEMON_JPMS_JVM_ARGS;
@@ -48,6 +51,7 @@ public class JpmsConfiguration {
         List<String> daemonJpmsJvmArgs = new ArrayList<String>();
         daemonJpmsJvmArgs.addAll(GROOVY_JPMS_JVM_ARGS);
         daemonJpmsJvmArgs.addAll(CONFIGURATION_CACHE_JPMS_JVM_ARGS);
+        daemonJpmsJvmArgs.add("--illegal-access=deny");
         GRADLE_DAEMON_JPMS_JVM_ARGS = Collections.unmodifiableList(daemonJpmsJvmArgs);
     }
 }
