@@ -37,8 +37,9 @@ public class JpmsConfiguration {
         "--add-opens", "java.prefs/java.util.prefs=ALL-UNNAMED" // required by PreferenceCleaningGroovySystemLoader
     ));
 
-    private static final List<String> CONFIGURATION_CACHE_JPMS_JVM_ARGS = Collections.unmodifiableList(Arrays.asList(
-        "--add-opens", "java.prefs/java.util.prefs=ALL-UNNAMED" // required by JavaObjectSerializationCodec.kt
+    public static final List<String> CONFIGURATION_CACHE_JPMS_JVM_ARGS = Collections.unmodifiableList(Arrays.asList(
+        "--add-opens", "java.prefs/java.util.prefs=ALL-UNNAMED", // required by JavaObjectSerializationCodec.kt
+        "--add-opens", "java.base/java.nio.charset=ALL-UNNAMED" // required by BeanSchemaKt
     ));
 
     private static final List<String> WORKER_JPMS_JVM_ARGS = Collections.unmodifiableList(Arrays.asList(
