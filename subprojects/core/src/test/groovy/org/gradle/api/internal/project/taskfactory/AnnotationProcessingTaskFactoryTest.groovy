@@ -20,6 +20,7 @@ import org.gradle.api.Action
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.internal.AbstractTask
 import org.gradle.api.internal.TaskInternal
 import org.gradle.api.internal.file.FileCollectionFactory
 import org.gradle.api.internal.file.FileResolver
@@ -577,9 +578,10 @@ class AnnotationProcessingTaskFactoryTest extends AbstractProjectBuilderSpec imp
         validateException(task, e, "Directory '$task.inputDir' specified for property 'inputDir' is not a directory.")
     }
 
-    @ValidationTestFor(
-        ValidationProblemId.VALUE_NOT_SET
-    )
+    @ValidationTestFor([
+        ValidationProblemId.VALUE_NOT_SET,
+        ValidationProblemId.IGNORED_ANNOTATIONS_ON_FIELD
+    ])
     def validatesNestedBeansWithPrivateType() {
         given:
         def task = expectTaskCreated(TaskWithNestedBeanWithPrivateClass, [existingFile, null] as Object[])
@@ -589,7 +591,9 @@ class AnnotationProcessingTaskFactoryTest extends AbstractProjectBuilderSpec imp
 
         then:
         def e = thrown WorkValidationException
-        validateException(task, e, missingValueMessage('bean.inputFile'))
+        validateException(task, false, e,
+            "Type 'AnnotationProcessingTasks.TaskWithNestedBeanWithPrivateClass': ${missingValueMessage('bean.inputFile')}",
+            "Type 'AnnotationProcessingTasks.Bean2': field 'inputFile2' without corresponding getter has been annotated with @InputFile. Annotations on fields are only used if there's a corresponding getter for the field. Possible solutions: Add a getter for field 'inputFile2' or remove the annotations on 'inputFile2'. ${learnAt('validation_problems', 'ignored_annotations_on_field')}.")
     }
 
     @ValidationTestFor(
@@ -925,7 +929,7 @@ class AnnotationProcessingTaskFactoryTest extends AbstractProjectBuilderSpec imp
 
     private <T extends TaskInternal> T expectTaskCreated(final Class<T> type, final Object... params) {
         final String name = "task"
-        T task = DefaultTask.injectIntoNewInstance(project, TaskIdentity.create(name, type, project), new Callable<T>() {
+        T task = AbstractTask.injectIntoNewInstance(project, TaskIdentity.create(name, type, project), new Callable<T>() {
             T call() throws Exception {
                 if (params.length > 0) {
                     return type.cast(type.constructors[0].newInstance(params))
@@ -947,8 +951,12 @@ class AnnotationProcessingTaskFactoryTest extends AbstractProjectBuilderSpec imp
     }
 
     private static void validateException(TaskInternal task, WorkValidationException exception, String... causes) {
+        validateException(task, true, exception, causes)
+    }
+
+    private static void validateException(TaskInternal task, boolean ignoreType, WorkValidationException exception, String... causes) {
         def expectedMessage = causes.length > 1 ? "Some problems were found with the configuration of $task" : "A problem was found with the configuration of $task"
-        WorkValidationExceptionChecker.check(exception, true) {
+        WorkValidationExceptionChecker.check(exception, ignoreType) {
             messageContains(expectedMessage)
             causes.each { cause ->
                 hasProblem(cause)
