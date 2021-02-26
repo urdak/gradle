@@ -39,7 +39,7 @@ public class JpmsConfiguration {
 
     public static final List<String> CONFIGURATION_CACHE_JPMS_JVM_ARGS = Collections.unmodifiableList(Arrays.asList(
         "--add-opens", "java.prefs/java.util.prefs=ALL-UNNAMED", // required by JavaObjectSerializationCodec.kt
-        "--illegal-access=deny"
+        "--add-opens", "java.base/java.nio.charset=ALL-UNNAMED" // required by BeanSchemaKt
     ));
 
     public static final List<String> GRADLE_DAEMON_JPMS_JVM_ARGS;
