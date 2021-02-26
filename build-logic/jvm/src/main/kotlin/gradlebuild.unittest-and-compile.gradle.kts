@@ -185,6 +185,7 @@ fun Test.configureJvmForTest() {
         jvmArgs(org.gradle.internal.jvm.GroovyJpmsConfiguration.GROOVY_JPMS_JVM_ARGS)
         // used by Configuration Cache
         jvmArgs(listOf("--add-opens", "java.base/java.net=ALL-UNNAMED"))
+        jvmArgs(listOf("--illegal-access=deny"))
     }
 }
 
