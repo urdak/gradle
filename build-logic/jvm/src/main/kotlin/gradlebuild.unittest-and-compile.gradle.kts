@@ -184,10 +184,12 @@ fun Test.configureJvmForTest() {
         // TODO: replace all of below with jvmArgs(org.gradle.internal.jvm.JpmsConfiguration.GRADLE_DAEMON_JPMS_JVM_ARGS) once wrapper is updated
         jvmArgs(org.gradle.internal.jvm.GroovyJpmsConfiguration.GROOVY_JPMS_JVM_ARGS)
         // used by Configuration Cache
-        jvmArgs(listOf(
-            "--add-opens", "java.base/java.net=ALL-UNNAMED", // required by JavaObjectSerializationCodec.kt
-            "--add-opens", "java.base/java.nio.charset=ALL-UNNAMED" // required by BeanSchemaKt
-        ))
+        jvmArgs(
+            listOf(
+                "--add-opens", "java.base/java.net=ALL-UNNAMED", // required by JavaObjectSerializationCodec.kt
+                "--add-opens", "java.base/java.nio.charset=ALL-UNNAMED" // required by BeanSchemaKt
+            )
+        )
     }
 }
 
