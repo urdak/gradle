@@ -101,7 +101,7 @@ public class GenerateModuleMetadata extends DefaultTask {
         suppressedValidationErrors = objectFactory.setProperty(String.class).convention(Collections.emptySet());
 
         // TODO - should be incremental
-        getOutputs().upToDateWhen(Specs.satisfyNone());
+        getOutputs().upToDateWhen("Task is never UP-TO-DATE", Specs.satisfyNone());
         setOnlyIf("The publication is attached to a component", spec(task -> hasAttachedComponent()));
     }
 

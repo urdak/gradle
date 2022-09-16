@@ -17,6 +17,7 @@ package org.gradle.api.tasks.diagnostics;
 
 import org.gradle.api.Project;
 import org.gradle.api.internal.ConventionTask;
+import org.gradle.api.specs.Specs;
 import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
@@ -52,7 +53,7 @@ public abstract class AbstractReportTask extends ConventionTask {
     private Set<Project> projects;
 
     protected AbstractReportTask() {
-        getOutputs().upToDateWhen(element -> false);
+        getOutputs().upToDateWhen("Task is never UP-TO-DATE", Specs.satisfyNone());
         projects = new HashSet<>();
         projects.add(getProject());
     }

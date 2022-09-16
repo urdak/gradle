@@ -19,6 +19,7 @@ package org.gradle.jvm.toolchain.internal.task;
 import com.google.common.base.Strings;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.provider.ProviderFactory;
+import org.gradle.api.specs.Specs;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.UntrackedTask;
 import org.gradle.internal.jvm.inspection.JvmInstallationMetadata;
@@ -51,7 +52,7 @@ public class ShowToolchainsTask extends DefaultTask {
     private final ToolchainReportRenderer toolchainRenderer = new ToolchainReportRenderer();
 
     public ShowToolchainsTask() {
-        getOutputs().upToDateWhen(spec(element -> false));
+        getOutputs().upToDateWhen("Task is never UP-TO-DATE", Specs.satisfyNone());
     }
 
     @TaskAction

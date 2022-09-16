@@ -65,7 +65,7 @@ public abstract class GeneratorTask<T> extends ConventionTask {
 
     public GeneratorTask() {
         if (!getIncremental()) {
-            getOutputs().upToDateWhen(Specs.satisfyNone());
+            getOutputs().upToDateWhen("Non-incremental generator task is never UP-TO-DATE", Specs.satisfyNone());
         }
     }
 

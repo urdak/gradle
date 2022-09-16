@@ -74,7 +74,7 @@ class TestExecutionBuildConfigurationAction implements EntryTaskSelector {
                 Test test = (Test) task;
                 test.setIgnoreFailures(true);
                 test.getFilter().setFailOnNoMatchingTests(false);
-                task.getOutputs().upToDateWhen(Specs.SATISFIES_NONE);
+                task.getOutputs().upToDateWhen("Task is never UP-TO-DATE", Specs.satisfyNone());
                 InternalDebugOptions debugOptions = testExecutionRequest.getDebugOptions();
                 if (debugOptions.isDebugMode()) {
                     test.debugOptions(new Action<JavaDebugOptions>() {
