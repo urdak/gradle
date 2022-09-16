@@ -17,6 +17,7 @@
 package org.gradle.api.tasks;
 
 import groovy.lang.Closure;
+import org.gradle.api.Incubating;
 import org.gradle.api.Task;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.specs.Spec;
@@ -60,9 +61,32 @@ public interface TaskOutputs {
      *     The task outputs cannot be reused when any predicate returns false.
      * </p>
      *
+     * <p>Consider using {@link #upToDateWhen(String, Spec)} instead for also providing a reason for the up-to-date check.</p>
+     *
      * @param upToDateSpec The spec to use to determine whether the task outputs are up-to-date.
      */
     void upToDateWhen(Spec<? super Task> upToDateSpec);
+
+    /**
+     * <p>
+     *     Adds a predicate to determine whether previous outputs of this task can be reused.
+     *     The given spec is evaluated at task execution time.
+     *     If the spec returns false, previous outputs of this task cannot be reused and the task will be executed.
+     *     That means the task is out-of-date and no outputs will be loaded from the build cache.
+     * </p>
+     *
+     * <p>
+     *     You can add multiple such predicates.
+     *     The task outputs cannot be reused when any predicate returns false.
+     * </p>
+     *
+     * @param upToDateReason the reason why task outputs should be considered up-to-date.
+     * @param spec The spec to use to determine whether the task outputs are up-to-date.
+     *
+     * @since 7.7
+     */
+    @Incubating
+    void upToDateWhen(String upToDateReason, Spec<? super Task> spec);
 
     /**
      * <p>Cache the results of the task only if the given spec is satisfied. If the spec is not satisfied,

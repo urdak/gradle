@@ -24,8 +24,9 @@ import org.gradle.api.internal.changedetection.TaskExecutionMode;
 import org.gradle.api.internal.changedetection.TaskExecutionModeResolver;
 import org.gradle.api.internal.project.taskfactory.IncrementalTaskAction;
 import org.gradle.api.internal.tasks.InputChangesAwareTaskAction;
+import org.gradle.api.internal.tasks.execution.DescribingAndSpec;
+import org.gradle.api.internal.tasks.execution.SelfDescribingSpec;
 import org.gradle.api.internal.tasks.properties.TaskProperties;
-import org.gradle.api.specs.AndSpec;
 
 @NonNullApi
 public class DefaultTaskExecutionModeResolver implements TaskExecutionModeResolver {
@@ -42,7 +43,7 @@ public class DefaultTaskExecutionModeResolver implements TaskExecutionModeResolv
             return TaskExecutionMode.UNTRACKED;
         }
         // Only false if no declared outputs AND no Task.upToDateWhen spec. We force to true for incremental tasks.
-        AndSpec<? super TaskInternal> upToDateSpec = task.getOutputs().getUpToDateSpec();
+        DescribingAndSpec<? super TaskInternal> upToDateSpec = task.getOutputs().getUpToDateSpec();
         if (!properties.hasDeclaredOutputs() && upToDateSpec.isEmpty()) {
             if (requiresInputChanges(task)) {
                 throw new InvalidUserCodeException("You must declare outputs or use `TaskOutputs.upToDateWhen()` when using the incremental task API");
@@ -55,8 +56,9 @@ public class DefaultTaskExecutionModeResolver implements TaskExecutionModeResolv
             return TaskExecutionMode.RERUN_TASKS_ENABLED;
         }
 
-        if (!upToDateSpec.isSatisfiedBy(task)) {
-            return TaskExecutionMode.UP_TO_DATE_WHEN_FALSE;
+        SelfDescribingSpec<? super TaskInternal> unsatisfiedSpec = upToDateSpec.findUnsatisfiedSpec(task);
+        if (unsatisfiedSpec != null) {
+            return TaskExecutionMode.upToDateWhenFalse(String.format("'%s' was not satisfied", unsatisfiedSpec.getDisplayName()));
         }
 
         return TaskExecutionMode.INCREMENTAL;

@@ -18,6 +18,7 @@ package org.gradle.api.internal;
 
 import org.gradle.api.NonNullApi;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.internal.tasks.execution.DescribingAndSpec;
 import org.gradle.api.internal.tasks.execution.SelfDescribingSpec;
 import org.gradle.api.internal.tasks.properties.PropertyVisitor;
 import org.gradle.api.specs.AndSpec;
@@ -35,7 +36,7 @@ public interface TaskOutputsInternal extends TaskOutputs {
      */
     void visitRegisteredProperties(PropertyVisitor visitor);
 
-    AndSpec<? super TaskInternal> getUpToDateSpec();
+    DescribingAndSpec<? super TaskInternal> getUpToDateSpec();
 
     void setPreviousOutputFiles(FileCollection previousOutputFiles);
 

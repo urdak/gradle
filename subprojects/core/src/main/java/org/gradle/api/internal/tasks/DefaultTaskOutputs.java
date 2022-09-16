@@ -28,6 +28,7 @@ import org.gradle.api.internal.TaskOutputsInternal;
 import org.gradle.api.internal.file.CompositeFileCollection;
 import org.gradle.api.internal.file.FileCollectionFactory;
 import org.gradle.api.internal.file.FileCollectionInternal;
+import org.gradle.api.internal.tasks.execution.DescribingAndSpec;
 import org.gradle.api.internal.tasks.execution.SelfDescribingSpec;
 import org.gradle.api.internal.tasks.properties.OutputFilePropertySpec;
 import org.gradle.api.internal.tasks.properties.OutputFilePropertyType;
@@ -36,7 +37,6 @@ import org.gradle.api.internal.tasks.properties.OutputUnpacker;
 import org.gradle.api.internal.tasks.properties.PropertyValue;
 import org.gradle.api.internal.tasks.properties.PropertyVisitor;
 import org.gradle.api.internal.tasks.properties.PropertyWalker;
-import org.gradle.api.specs.AndSpec;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.TaskOutputFilePropertyBuilder;
 
@@ -53,7 +53,7 @@ public class DefaultTaskOutputs implements TaskOutputsInternal {
     private final FileCollection allOutputFiles;
     private final PropertyWalker propertyWalker;
     private final FileCollectionFactory fileCollectionFactory;
-    private AndSpec<TaskInternal> upToDateSpec = AndSpec.empty();
+    private DescribingAndSpec<TaskInternal> upToDateSpec = DescribingAndSpec.empty();
     private final List<SelfDescribingSpec<TaskInternal>> cacheIfSpecs = new LinkedList<>();
     private final List<SelfDescribingSpec<TaskInternal>> doNotCacheIfSpecs = new LinkedList<>();
     private FileCollection previousOutputFiles;
@@ -77,21 +77,28 @@ public class DefaultTaskOutputs implements TaskOutputsInternal {
     }
 
     @Override
-    public AndSpec<? super TaskInternal> getUpToDateSpec() {
+    public DescribingAndSpec<? super TaskInternal> getUpToDateSpec() {
         return upToDateSpec;
     }
 
     @Override
     public void upToDateWhen(final Closure upToDateClosure) {
         taskMutator.mutate("TaskOutputs.upToDateWhen(Closure)", () -> {
-            upToDateSpec = upToDateSpec.and(upToDateClosure);
+            upToDateSpec = upToDateSpec.and(upToDateClosure, "task satisfies upToDateWhen closure");
         });
     }
 
     @Override
     public void upToDateWhen(final Spec<? super Task> spec) {
         taskMutator.mutate("TaskOutputs.upToDateWhen(Spec)", () -> {
-            upToDateSpec = upToDateSpec.and(spec);
+            upToDateSpec = upToDateSpec.and(spec, "task satisfies upToDateWhen spec");
+        });
+    }
+
+    @Override
+    public void upToDateWhen(String upToDateReason, Spec<? super Task> spec) {
+        taskMutator.mutate("TaskOutputs.upToDateWhen(String, Spec)", () -> {
+            upToDateSpec = upToDateSpec.and(spec, upToDateReason);
         });
     }
 

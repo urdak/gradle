@@ -125,6 +125,9 @@ public abstract class CreateEmptyDirectory extends DefaultTask {
             task customTask(type: CustomTask) {
                 outputFile = file("$buildDir/outputFile")
                 content = providers.gradleProperty('content').getOrElse(null)
+                outputs.upToDateWhen("upToDate property must be set") {
+                    providers.gradleProperty('upToDate').present
+                }
             }
 
             class CustomTask extends DefaultTask {
@@ -144,24 +147,31 @@ public abstract class CreateEmptyDirectory extends DefaultTask {
         def customTask = ':customTask'
         def notUpToDateBecause = /Task '${customTask}' is not up-to-date because:/
         when:
-        run customTask, '-Pcontent=first', '--info'
+        run customTask, '-Pcontent=first', '-PupToDate', '--info'
         then:
         executedAndNotSkipped customTask
         result.output =~ notUpToDateBecause
         outputContains('No history is available')
 
         when:
-        run customTask, '-Pcontent=second', '--info'
+        run customTask, '-Pcontent=second', '-PupToDate', '--info'
         then:
         executedAndNotSkipped(customTask)
         result.output =~ notUpToDateBecause
         outputContains("Value of input property 'content' has changed for task '${customTask}'")
 
         when:
-        run customTask, '-Pcontent=second', '--info'
+        run customTask, '-Pcontent=second', '-PupToDate', '--info'
         then:
         skipped customTask
         result.output =~ /Skipping task '${customTask}' as it is up-to-date\./
+
+        when:
+        run customTask, '-Pcontent=second', '--info'
+        then:
+        executedAndNotSkipped customTask
+        result.output =~ notUpToDateBecause
+        outputContains("'upToDate property must be set' was not satisfied")
     }
 
     def "registering an optional #type output property with a null value keeps task up-to-date"() {

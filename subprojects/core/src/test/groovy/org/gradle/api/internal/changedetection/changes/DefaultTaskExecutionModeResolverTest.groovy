@@ -22,15 +22,15 @@ import org.gradle.api.internal.TaskInternal
 import org.gradle.api.internal.TaskOutputsInternal
 import org.gradle.api.internal.changedetection.TaskExecutionMode
 import org.gradle.api.internal.project.taskfactory.IncrementalTaskAction
+import org.gradle.api.internal.tasks.execution.DescribingAndSpec
+import org.gradle.api.internal.tasks.execution.SelfDescribingSpec
 import org.gradle.api.internal.tasks.properties.TaskProperties
-import org.gradle.api.specs.AndSpec
 import spock.lang.Specification
 
 import static org.gradle.api.internal.changedetection.TaskExecutionMode.INCREMENTAL
 import static org.gradle.api.internal.changedetection.TaskExecutionMode.NO_OUTPUTS
 import static org.gradle.api.internal.changedetection.TaskExecutionMode.RERUN_TASKS_ENABLED
 import static org.gradle.api.internal.changedetection.TaskExecutionMode.UNTRACKED
-import static org.gradle.api.internal.changedetection.TaskExecutionMode.UP_TO_DATE_WHEN_FALSE
 
 class DefaultTaskExecutionModeResolverTest extends Specification {
 
@@ -40,7 +40,7 @@ class DefaultTaskExecutionModeResolverTest extends Specification {
     def outputs = Stub(TaskOutputsInternal)
     def taskProperties = Mock(TaskProperties)
     def task = Stub(TaskInternal)
-    def upToDateSpec = Mock(AndSpec)
+    def upToDateSpec = Mock(DescribingAndSpec)
 
     def setup() {
         _ * task.getInputs() >> inputs
@@ -77,7 +77,7 @@ class DefaultTaskExecutionModeResolverTest extends Specification {
         then:
         state == INCREMENTAL
         1 * taskProperties.hasDeclaredOutputs() >> true
-        1 * upToDateSpec.isSatisfiedBy(task) >> true
+        1 * upToDateSpec.findUnsatisfiedSpec(task) >> null
         0 * _
     }
 
@@ -94,13 +94,17 @@ class DefaultTaskExecutionModeResolverTest extends Specification {
     }
 
     def "upToDateSpec evaluates to false"() {
+        setup:
+        def spec = Mock(SelfDescribingSpec)
+
         when:
         def state = repository.getExecutionMode(task, taskProperties)
 
         then:
-        state == UP_TO_DATE_WHEN_FALSE
+        state instanceof TaskExecutionMode.UpToDateWhenFalse
         1 * taskProperties.hasDeclaredOutputs() >> true
-        1 * upToDateSpec.isSatisfiedBy(task) >> false
+        1 * upToDateSpec.findUnsatisfiedSpec(task) >> spec
+        1 * spec.getDisplayName() >> "Not up to date"
         0 * _
     }
 
