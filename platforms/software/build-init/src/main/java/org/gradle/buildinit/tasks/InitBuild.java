@@ -215,7 +215,7 @@ public abstract class InitBuild extends DefaultTask {
     /**
      * The directory of the generated project, defaults to the directory the project is generated in.
      *
-     * @since 8.10
+     * @since 8.12
      */
     @OutputDirectory
     @Incubating
@@ -316,8 +316,9 @@ public abstract class InitBuild extends DefaultTask {
     private void doInitSpecProjectGeneration(UserInputHandler inputHandler) {
         BuildInitConfig config = inputHandler.askUser(this::selectAndConfigureSpec).get();
         BuildInitGenerator generator = createGenerator(config);
-        generator.generate(config, projectDir);
-        generateWrapper();
+        Directory projectDirectory = projectDir.get();
+        generator.generate(config, projectDirectory);
+        generateWrapper(projectDirectory);
     }
 
     private BuildInitConfig selectAndConfigureSpec(UserQuestions userQuestions) {
