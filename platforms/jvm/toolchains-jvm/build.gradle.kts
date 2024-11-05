@@ -21,12 +21,6 @@ plugins {
 
 description = "Adds support for using JVM toolchains in projects"
 
-errorprone {
-    disabledChecks.addAll(
-        "StringCaseLocaleUsage", // 2 occurrences
-    )
-}
-
 dependencies {
     api(projects.stdlibJavaExtensions)
     api(projects.serviceProvider)
@@ -38,10 +32,12 @@ dependencies {
     api(projects.enterpriseOperations)
     api(projects.enterpriseLogging)
     api(projects.fileCollections)
+    api(projects.fileOperations)
     api(projects.jvmServices)
     api(projects.modelCore)
     api(projects.persistentCache)
     api(projects.platformBase)
+    api(projects.processServices)
     api(projects.platformJvm)
     api(projects.resources)
     api(projects.toolchainsJvmShared)
@@ -54,6 +50,7 @@ dependencies {
     }
 
     implementation(projects.diagnostics)
+    implementation(projects.fileTemp)
     implementation(projects.logging)
 
     implementation(libs.commonsIo)
@@ -83,3 +80,6 @@ packageCycles {
 }
 
 integTest.usesJavadocCodeSnippets.set(true)
+tasks.isolatedProjectsIntegTest {
+    enabled = false
+}

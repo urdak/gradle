@@ -18,16 +18,15 @@ package org.gradle.internal.declarativedsl.evaluator
 
 import org.gradle.api.Project
 import org.gradle.api.initialization.Settings
-import org.gradle.api.internal.SettingsInternal
 import org.gradle.api.internal.initialization.ClassLoaderScope
 import org.gradle.declarative.dsl.evaluation.InterpretationSequence
 import org.gradle.groovy.scripts.ScriptSource
-import org.gradle.internal.declarativedsl.conventions.softwareTypeRegistryBasedConventionRegistrar
+import org.gradle.internal.declarativedsl.defaults.softwareTypeRegistryBasedModelDefaultsRegistrar
 import org.gradle.internal.declarativedsl.evaluator.runner.EvaluationResult.NotEvaluated
 import org.gradle.internal.declarativedsl.evaluator.runner.EvaluationResult.NotEvaluated.StageFailure.NoSchemaAvailable
 import org.gradle.internal.declarativedsl.evaluator.checks.DocumentCheck
-import org.gradle.internal.declarativedsl.evaluator.conventions.ConventionApplicationHandler
-import org.gradle.internal.declarativedsl.evaluator.conventions.ConventionDefinitionCollector
+import org.gradle.internal.declarativedsl.evaluator.defaults.ApplyModelDefaultsHandler
+import org.gradle.internal.declarativedsl.evaluator.defaults.ModelDefaultsDefinitionCollector
 import org.gradle.internal.declarativedsl.evaluator.conversion.AnalysisAndConversionStepRunner
 import org.gradle.internal.declarativedsl.evaluator.conversion.ConversionStepContext
 import org.gradle.internal.declarativedsl.evaluator.conversion.ConversionStepResult
@@ -39,10 +38,10 @@ import org.gradle.internal.declarativedsl.evaluator.schema.InterpretationSchemaB
 import org.gradle.internal.declarativedsl.evaluator.schema.InterpretationSchemaBuildingResult
 import org.gradle.internal.declarativedsl.evaluator.schema.DeclarativeScriptContext
 import org.gradle.internal.declarativedsl.settings.SettingsBlocksCheck
+import org.gradle.internal.declarativedsl.common.UnsupportedSyntaxFeatureCheck
 import org.gradle.plugin.software.internal.SoftwareTypeRegistry
 
 
-internal
 interface DeclarativeKotlinScriptEvaluator {
     fun evaluate(
         target: Any,
@@ -58,10 +57,10 @@ fun defaultDeclarativeScriptEvaluator(
     softwareTypeRegistry: SoftwareTypeRegistry
 ): DeclarativeKotlinScriptEvaluator = DefaultDeclarativeKotlinScriptEvaluator(
     schemaBuilder,
-    documentChecks = setOf(SettingsBlocksCheck),
+    documentChecks = setOf(SettingsBlocksCheck, UnsupportedSyntaxFeatureCheck),
     resolutionResultHandlers = setOf(
-        ConventionApplicationHandler.DO_NOTHING,
-        ConventionDefinitionCollector(softwareTypeRegistryBasedConventionRegistrar(softwareTypeRegistry))
+        ApplyModelDefaultsHandler.DO_NOTHING,
+        ModelDefaultsDefinitionCollector(softwareTypeRegistryBasedModelDefaultsRegistrar(softwareTypeRegistry))
     )
 )
 
@@ -84,7 +83,7 @@ class DefaultDeclarativeKotlinScriptEvaluator(
         scriptSource: ScriptSource,
         targetScope: ClassLoaderScope
     ): EvaluationResult<ConversionStepResult> {
-        val scriptContext = scriptContextFor(target, scriptSource, targetScope)
+        val scriptContext = scriptContextFor(target)
         return when (val built = schemaBuilder.getEvaluationSchemaForScript(scriptContext)) {
             InterpretationSchemaBuildingResult.SchemaNotBuilt -> NotEvaluated(listOf(NoSchemaAvailable(scriptContext)), ConversionStepResult.CannotRunStep)
             is InterpretationSchemaBuildingResult.InterpretationSequenceAvailable -> runInterpretationSequence(scriptSource, built.sequence, target)
@@ -103,12 +102,8 @@ class DefaultDeclarativeKotlinScriptEvaluator(
         }.lastOrNull() ?: NotEvaluated(stageFailures = emptyList(), partialStepResult = ConversionStepResult.CannotRunStep)
 
     private
-    fun scriptContextFor(
-        target: Any,
-        scriptSource: ScriptSource,
-        targetScope: ClassLoaderScope
-    ): DeclarativeScriptContext = when (target) {
-        is Settings -> LoadedSettingsScriptContext(target as SettingsInternal, targetScope, scriptSource)
+    fun scriptContextFor(target: Any): DeclarativeScriptContext = when (target) {
+        is Settings -> DeclarativeScriptContext.SettingsScript
         is Project -> DeclarativeScriptContext.ProjectScript
         else -> DeclarativeScriptContext.UnknownScript
     }

@@ -35,10 +35,8 @@ import org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.builder.
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.builder.DependencyGraphBuilder;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.conflicts.CapabilitiesConflictHandler;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.conflicts.LastCandidateCapabilityResolver;
-import org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.conflicts.RejectRemainingCandidates;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.conflicts.UserConfiguredCapabilityResolver;
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.result.ComponentSelectionDescriptorFactory;
-import org.gradle.api.internal.attributes.AttributesSchemaInternal;
 import org.gradle.api.specs.Spec;
 import org.gradle.internal.ImmutableActionSet;
 import org.gradle.internal.component.external.model.ModuleComponentGraphResolveStateFactory;
@@ -96,7 +94,6 @@ public class DependencyGraphResolver {
         RootComponentMetadataBuilder.RootComponentState rootComponent,
         List<? extends DependencyMetadata> syntheticDependencies,
         Spec<? super DependencyMetadata> edgeFilter,
-        AttributesSchemaInternal consumerSchema,
         ComponentSelectorConverter componentSelectorConverter,
         DependencyToComponentIdResolver componentIdResolver,
         ComponentMetaDataResolver componentMetaDataResolver,
@@ -122,7 +119,6 @@ public class DependencyGraphResolver {
             rootComponent,
             syntheticDependencies,
             edgeFilter,
-            consumerSchema,
             componentSelectorConverter,
             componentIdResolver,
             clientModuleResolver,
@@ -154,10 +150,18 @@ public class DependencyGraphResolver {
     }
 
     private static List<CapabilitiesConflictHandler.Resolver> createCapabilityConflictResolvers(CapabilitiesResolutionInternal capabilitiesResolutionRules) {
+
+        // The order of these resolvers is significant. They run in the declared order.
         return ImmutableList.of(
-            new UserConfiguredCapabilityResolver(capabilitiesResolutionRules),
+            // Candidates that are no longer selected are filtered out before these resolvers are executed.
+            // If there is only one candidate at the beginning of conflict resolution, select that candidate.
             new LastCandidateCapabilityResolver(),
-            new RejectRemainingCandidates()
+
+            // Otherwise, let the user resolvers reject candidates.
+            new UserConfiguredCapabilityResolver(capabilitiesResolutionRules),
+
+            // If there is one candidate left after the user resolvers are executed, select that candidate.
+            new LastCandidateCapabilityResolver()
         );
     }
 }

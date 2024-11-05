@@ -31,7 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DefaultProblemBuilder implements InternalProblemBuilder {
-
+    @Nullable
     private ProblemStream problemStream;
 
     private ProblemId id;
@@ -41,11 +41,24 @@ public class DefaultProblemBuilder implements InternalProblemBuilder {
     private String details;
     private DocLink docLink;
     private List<String> solutions;
-    private RuntimeException exception;
+    private Throwable exception;
     private AdditionalData additionalData;
     private boolean collectLocation = false;
+    private final AdditionalDataBuilderFactory additionalDataBuilderFactory;
 
-    public DefaultProblemBuilder(Problem problem) {
+    public DefaultProblemBuilder(AdditionalDataBuilderFactory additionalDataBuilderFactory) {
+        this.additionalDataBuilderFactory = additionalDataBuilderFactory;
+        this.additionalData = null;
+        this.solutions = new ArrayList<String>();
+    }
+
+    public DefaultProblemBuilder(@Nullable ProblemStream problemStream, AdditionalDataBuilderFactory additionalDataBuilderFactory) {
+        this(additionalDataBuilderFactory);
+        this.problemStream = problemStream;
+    }
+
+    public DefaultProblemBuilder(Problem problem, AdditionalDataBuilderFactory additionalDataBuilderFactory) {
+        this(additionalDataBuilderFactory);
         this.id = problem.getDefinition().getId();
         this.contextualLabel = problem.getContextualLabel();
         this.solutions = new ArrayList<String>(problem.getSolutions());
@@ -60,36 +73,32 @@ public class DefaultProblemBuilder implements InternalProblemBuilder {
         this.problemStream = null;
     }
 
-    public DefaultProblemBuilder(ProblemStream problemStream) {
-        this.problemStream = problemStream;
-        this.solutions = new ArrayList<String>();
-        this.additionalData = null;
-    }
-
     @Override
     public Problem build() {
         // id is mandatory
-        if (id == null) {
+        if (getId() == null) {
             return invalidProblem("missing-id", "Problem id must be specified", null);
-        } else if (id.getGroup() == null) {
+        } else if (getId().getGroup() == null) {
             return invalidProblem("missing-parent", "Problem id must have a parent", null);
         }
 
         if (additionalData instanceof UnsupportedAdditionalDataSpec) {
             return invalidProblem("unsupported-additional-data", "Unsupported additional data type",
-                "Unsupported additional data type: " + ((UnsupportedAdditionalDataSpec) additionalData).getType().getName() + ". Supported types are: " + AdditionalDataBuilderFactory.getSupportedTypes());
+                "Unsupported additional data type: " + ((UnsupportedAdditionalDataSpec) additionalData).getType().getName() +
+                    ". Supported types are: " + additionalDataBuilderFactory.getSupportedTypes());
         }
 
-        RuntimeException exceptionForProblemInstantiation = getExceptionForProblemInstantiation();
+        Throwable exceptionForProblemInstantiation = getExceptionForProblemInstantiation();
         if (problemStream != null) {
             addLocationsFromProblemStream(this.locations, exceptionForProblemInstantiation);
         }
 
-        ProblemDefinition problemDefinition = new DefaultProblemDefinition(id, getSeverity(), docLink);
+        ProblemDefinition problemDefinition = new DefaultProblemDefinition(getId(), getSeverity(), docLink);
         return new DefaultProblem(problemDefinition, contextualLabel, solutions, locations.build(), details, exceptionForProblemInstantiation, additionalData);
     }
 
-    private void addLocationsFromProblemStream(ImmutableList.Builder<ProblemLocation> locations, RuntimeException exceptionForProblemInstantiation) {
+    private void addLocationsFromProblemStream(ImmutableList.Builder<ProblemLocation> locations, Throwable exceptionForProblemInstantiation) {
+        assert problemStream != null;
         ProblemDiagnostics problemDiagnostics = problemStream.forCurrentCaller(exceptionForProblemInstantiation);
         Location loc = problemDiagnostics.getLocation();
         if (loc != null) {
@@ -101,6 +110,7 @@ public class DefaultProblemBuilder implements InternalProblemBuilder {
     }
 
     private static DefaultPluginIdLocation getDefaultPluginIdLocation(ProblemDiagnostics problemDiagnostics) {
+        assert problemDiagnostics.getSource() != null;
         return new DefaultPluginIdLocation(problemDiagnostics.getSource().getPluginId());
     }
 
@@ -110,13 +120,13 @@ public class DefaultProblemBuilder implements InternalProblemBuilder {
         return DefaultLineInFileLocation.from(path, line);
     }
 
-    private Problem invalidProblem(String id, String displayName, String contextualLabel) {
+    private Problem invalidProblem(String id, String displayName, @Nullable String contextualLabel) {
         id(id, displayName, new DefaultProblemGroup(
             "problems-api",
             "Problems API")
         ).stackLocation();
-        ProblemDefinition problemDefinition = new DefaultProblemDefinition(this.id, Severity.WARNING, null);
-        RuntimeException exceptionForProblemInstantiation = getExceptionForProblemInstantiation();
+        ProblemDefinition problemDefinition = new DefaultProblemDefinition(this.getId(), Severity.WARNING, null);
+        Throwable exceptionForProblemInstantiation = getExceptionForProblemInstantiation();
         ImmutableList.Builder<ProblemLocation> problemLocations = ImmutableList.builder();
         addLocationsFromProblemStream(problemLocations, exceptionForProblemInstantiation);
         return new DefaultProblem(problemDefinition, contextualLabel,
@@ -127,7 +137,7 @@ public class DefaultProblemBuilder implements InternalProblemBuilder {
             null);
     }
 
-    public RuntimeException getExceptionForProblemInstantiation() {
+    public Throwable getExceptionForProblemInstantiation() {
         return getException() == null && collectLocation ? new RuntimeException() : getException();
     }
 
@@ -187,12 +197,6 @@ public class DefaultProblemBuilder implements InternalProblemBuilder {
     }
 
     @Override
-    public InternalProblemBuilder pluginLocation(String pluginId) {
-        this.addLocation(new DefaultPluginIdLocation(pluginId));
-        return this;
-    }
-
-    @Override
     public InternalProblemBuilder stackLocation() {
         this.collectLocation = true;
         return this;
@@ -245,10 +249,10 @@ public class DefaultProblemBuilder implements InternalProblemBuilder {
     @Override
     @SuppressWarnings("unchecked")
     public <U extends AdditionalDataSpec> InternalProblemBuilder additionalData(Class<? extends U> specType, Action<? super U> config) {
-        if (AdditionalDataBuilderFactory.ADDITIONAL_DATA_BUILDER_PROVIDERS.containsKey(specType)) {
-            AdditionalDataBuilder<?> additionalDatabuilder = AdditionalDataBuilderFactory.createAdditionalDataBuilder(specType, additionalData);
-            config.execute((U) additionalDatabuilder);
-            additionalData = additionalDatabuilder.build();
+        if (additionalDataBuilderFactory.hasProviderForSpec(specType)) {
+            AdditionalDataBuilder<?> additionalDataBuilder = additionalDataBuilderFactory.createAdditionalDataBuilder(specType, additionalData);
+            config.execute((U) additionalDataBuilder);
+            additionalData = additionalDataBuilder.build();
         } else {
             additionalData = new UnsupportedAdditionalDataSpec(specType);
         }
@@ -256,13 +260,13 @@ public class DefaultProblemBuilder implements InternalProblemBuilder {
     }
 
     @Override
-    public InternalProblemBuilder withException(RuntimeException e) {
-        this.exception = e;
+    public InternalProblemBuilder withException(Throwable t) {
+        this.exception = t;
         return this;
     }
 
     @Nullable
-    RuntimeException getException() {
+    Throwable getException() {
         return exception;
     }
 
@@ -270,7 +274,10 @@ public class DefaultProblemBuilder implements InternalProblemBuilder {
         this.locations.add(location);
     }
 
-    @SuppressWarnings("rawtypes")
+    public ProblemId getId() {
+        return id;
+    }
+
     private static class UnsupportedAdditionalDataSpec implements AdditionalData {
 
         private final Class<?> type;

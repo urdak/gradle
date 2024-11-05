@@ -1,6 +1,7 @@
 plugins {
     id("gradlebuild.distribution.api-java")
     id("gradlebuild.update-init-template-versions")
+    id("gradlebuild.instrumented-java-project")
 }
 
 description = """This project contains the Build Init plugin, which is automatically applied to the root project of every build, and provides the init and wrapper tasks.
@@ -15,7 +16,6 @@ errorprone {
         "ImmutableEnumChecker", // 2 occurrences
         "InconsistentCapitalization", // 1 occurrences
         "ReferenceEquality", // 1 occurrences
-        "StringCaseLocaleUsage", // 5 occurrences
         "UnusedMethod", // 1 occurrences
     )
 }
@@ -25,20 +25,22 @@ dependencies {
     api(libs.jsr305)
     api(libs.maven3Settings)
 
-    api(projects.stdlibJavaExtensions)
-    api(projects.serviceProvider)
     api(projects.baseServices)
+    api(projects.buildInitSpecs)
     api(projects.core)
     api(projects.coreApi)
+    api(projects.daemonServices)
     api(projects.dependencyManagement)
     api(projects.fileCollections)
     api(projects.logging)
     api(projects.platformJvm)
-    api(projects.toolchainsJvmShared)
+    api(projects.serviceProvider)
+    api(projects.stdlibJavaExtensions)
+    api(projects.jvmServices)
     api(projects.workers)
-    api(projects.daemonServices)
 
-    implementation(projects.internalInstrumentationApi)
+    implementation(projects.buildInitSpecsApi)
+    implementation(projects.fileOperations)
     implementation(projects.loggingApi)
     implementation(projects.platformNative)
     implementation(projects.pluginsApplication) {

@@ -111,7 +111,7 @@ import static org.gradle.util.internal.ConfigureUtil.configureUsing;
  *
  * <pre class='autoTested'>
  * plugins {
- *     id 'java' // adds 'test' task
+ *     id("java-library") // adds 'test' task
  * }
  *
  * test {
@@ -671,6 +671,7 @@ public abstract class Test extends AbstractTestTask implements JavaForkOptions, 
         validateExecutableMatchesToolchain();
         JavaForkOptions javaForkOptions = getForkOptionsFactory().newJavaForkOptions();
         copyTo(javaForkOptions);
+        javaForkOptions.systemProperty(TestWorker.WORKER_TMPDIR_SYS_PROPERTY, new File(getTemporaryDir(), "work"));
         JavaModuleDetector javaModuleDetector = getJavaModuleDetector();
         boolean testIsModule = javaModuleDetector.isModule(modularity.getInferModulePath().get(), getTestClassesDirs());
         FileCollection classpath = javaModuleDetector.inferClasspath(testIsModule, stableClasspath);
@@ -725,12 +726,11 @@ public abstract class Test extends AbstractTestTask implements JavaForkOptions, 
         if (getDebug()) {
             getLogger().info("Running tests for remote debugging.");
         }
-        forkOptions.systemProperty(TestWorker.WORKER_TMPDIR_SYS_PROPERTY, new File(getTemporaryDir(), "work"));
 
         try {
             super.executeTests();
         } finally {
-            CompositeStoppable.stoppable(getTestFramework());
+            CompositeStoppable.stoppable(getTestFramework()).stop();
         }
     }
 
@@ -1000,7 +1000,6 @@ public abstract class Test extends AbstractTestTask implements JavaForkOptions, 
 
     /**
      * Specifies that JUnit4 should be used to discover and execute the tests.
-     * <p>
      *
      * @see #useJUnit(org.gradle.api.Action) Configure JUnit4 specific options.
      */
@@ -1067,7 +1066,6 @@ public abstract class Test extends AbstractTestTask implements JavaForkOptions, 
 
     /**
      * Specifies that TestNG should be used to discover and execute the tests.
-     * <p>
      *
      * @see #useTestNG(org.gradle.api.Action) Configure TestNG specific options.
      */
@@ -1106,8 +1104,6 @@ public abstract class Test extends AbstractTestTask implements JavaForkOptions, 
      * If we are setting a framework to its existing value, no-op so as not to overwrite existing options here.
      * We need to allow this especially for the default test task, so that existing builds that configure options and
      * then call useJunit() don't clear out their options.
-     *
-     * @param testFramework
      */
     void useTestFramework(TestFramework testFramework) {
         Class<?> currentFramework = this.testFramework.get().getClass();

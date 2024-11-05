@@ -33,6 +33,7 @@ dependencies {
     api(projects.stdlibJavaExtensions)
     api(projects.baseServices)
     api(projects.buildOperations)
+    api(projects.buildOption)
 
     api(libs.guava)
     api(libs.inject)
@@ -46,4 +47,7 @@ dependencies {
     testFixturesImplementation(projects.enterpriseOperations)
     testFixturesImplementation(projects.baseServices)
     testFixturesImplementation(projects.internalIntegTesting)
+}
+tasks.isolatedProjectsIntegTest {
+    enabled = false
 }

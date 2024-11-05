@@ -31,16 +31,17 @@ import org.gradle.api.internal.tasks.testing.TestExecutionSpec
 import org.gradle.api.internal.tasks.testing.TestFramework
 import org.gradle.api.internal.tasks.testing.TestResultProcessor
 import org.gradle.api.internal.tasks.testing.junit.JUnitTestFramework
-import org.gradle.api.internal.tasks.testing.junit.result.TestResultsProvider
-import org.gradle.api.internal.tasks.testing.report.TestReporter
 import org.gradle.api.tasks.AbstractConventionTaskTest
 import org.gradle.api.tasks.util.PatternSet
-import org.gradle.internal.jvm.Jvm
+import org.gradle.integtests.fixtures.AvailableJavaHomes
 import org.gradle.internal.jvm.inspection.JvmInstallationMetadata
 import org.gradle.jvm.toolchain.internal.DefaultToolchainJavaLauncher
 import org.gradle.jvm.toolchain.internal.JavaToolchain
 import org.gradle.jvm.toolchain.internal.JavaToolchainInput
 import org.gradle.process.CommandLineArgumentProvider
+import org.gradle.test.fixtures.file.TestFile
+import org.gradle.test.precondition.Requires
+import org.gradle.test.preconditions.IntegTestPreconditions
 import org.gradle.util.TestUtil
 
 import static org.gradle.util.internal.WrapUtil.toLinkedSet
@@ -51,10 +52,10 @@ class TestTest extends AbstractConventionTaskTest {
     static final String TEST_PATTERN_2 = "pattern2"
     static final String TEST_PATTERN_3 = "pattern3"
 
-    private File classesDir
-    private File resultsDir
-    private File binResultsDir
-    private File reportDir
+    private TestFile classesDir
+    private TestFile resultsDir
+    private TestFile binResultsDir
+    private TestFile reportDir
 
     def testExecuterMock = Mock(TestExecuter)
     def testFrameworkMock = Mock(TestFramework)
@@ -104,14 +105,12 @@ class TestTest extends AbstractConventionTaskTest {
     def "generates report"() {
         given:
         configureTask()
-        final testReporter = Mock(TestReporter)
-        test.setTestReporter(testReporter)
 
         when:
         test.executeTests()
 
         then:
-        1 * testReporter.generateReport(_ as TestResultsProvider, reportDir)
+        reportDir.assertContainsDescendants("index.html")
         1 * testExecuterMock.execute(_ as TestExecutionSpec, _ as TestResultProcessor)
     }
 
@@ -231,11 +230,15 @@ class TestTest extends AbstractConventionTaskTest {
         javaForkOptions.getJvmArgs() == ['First', 'Second']
     }
 
+    @Requires(IntegTestPreconditions.JavaHomeWithDifferentVersionAvailable)
     def "java version is determined with toolchain if set"() {
-        def metadata = Mock(JvmInstallationMetadata)
-        metadata.getLanguageVersion() >> Jvm.current().javaVersion
-        metadata.getCapabilities() >> Collections.emptySet()
-        metadata.getJavaHome() >> Jvm.current().javaHome.toPath()
+        def jdk = AvailableJavaHomes.differentVersion
+
+        def metadata = JvmInstallationMetadata.from(
+            jdk.javaHome,
+            Integer.toString(jdk.javaVersionMajor),
+            "", "", "", "", "", "", ""
+        )
         def toolchain = new JavaToolchain(metadata, TestFiles.fileFactory(), Mock(JavaToolchainInput), false)
         def launcher = new DefaultToolchainJavaLauncher(toolchain)
 
@@ -243,7 +246,7 @@ class TestTest extends AbstractConventionTaskTest {
         test.javaLauncher.set(launcher)
 
         then:
-        test.getJavaVersion() == Jvm.current().javaVersion
+        test.getJavaVersion().majorVersion == Integer.toString(jdk.javaVersionMajor)
     }
 
     private void assertIsDirectoryTree(FileTreeInternal classFiles, Set<String> includes, Set<String> excludes) {

@@ -16,53 +16,46 @@
 
 package org.gradle.api.problems.internal;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
 import org.gradle.api.problems.ProblemReporter;
 import org.gradle.internal.operations.CurrentBuildOperationRef;
 import org.gradle.internal.service.scopes.Scope;
 import org.gradle.internal.service.scopes.ServiceScope;
 import org.gradle.problems.buildtree.ProblemStream;
 
-import java.util.Collection;
-
-import static org.gradle.api.problems.internal.DefaultProblemCategory.GRADLE_CORE_NAMESPACE;
+import javax.annotation.Nonnull;
 
 @ServiceScope(Scope.BuildTree.class)
 public class DefaultProblems implements InternalProblems {
 
     private final ProblemStream problemStream;
     private final CurrentBuildOperationRef currentBuildOperationRef;
-    private final Collection<ProblemEmitter> emitter;
+    private final ProblemSummarizer problemSummarizer;
     private final InternalProblemReporter internalReporter;
-    private final Multimap<Throwable, Problem> problemsForThrowables = Multimaps.synchronizedMultimap(HashMultimap.<Throwable, Problem>create());
+    private final AdditionalDataBuilderFactory additionalDataBuilderFactory = new AdditionalDataBuilderFactory();
 
-    public DefaultProblems(Collection<ProblemEmitter> emitter, CurrentBuildOperationRef currentBuildOperationRef) {
+    public DefaultProblems(ProblemSummarizer emitter, CurrentBuildOperationRef currentBuildOperationRef) {
         this(emitter, null, currentBuildOperationRef);
     }
 
-    public DefaultProblems(Collection<ProblemEmitter> emitter) {
+    public DefaultProblems(ProblemSummarizer emitter) {
         this(emitter, null, CurrentBuildOperationRef.instance());
     }
 
-    public DefaultProblems(Collection<ProblemEmitter> emitter, ProblemStream problemStream, CurrentBuildOperationRef currentBuildOperationRef) {
-        this.emitter = emitter;
+    public DefaultProblems(ProblemSummarizer problemSummarizer, ProblemStream problemStream, CurrentBuildOperationRef currentBuildOperationRef) {
+        this.problemSummarizer = problemSummarizer;
         this.problemStream = problemStream;
         this.currentBuildOperationRef = currentBuildOperationRef;
-        internalReporter = createReporter(emitter, problemStream, problemsForThrowables);
+        this.internalReporter = createReporter();
     }
 
     @Override
-    public ProblemReporter forNamespace(String namespace) {
-        if (GRADLE_CORE_NAMESPACE.equals(namespace)) {
-            throw new IllegalStateException("Cannot use " + GRADLE_CORE_NAMESPACE + " namespace. Reserved for internal use.");
-        }
-        return createReporter(emitter, problemStream, problemsForThrowables);
+    public ProblemReporter getReporter() {
+        return createReporter();
     }
 
-    private DefaultProblemReporter createReporter(Collection<ProblemEmitter> emitter, ProblemStream problemStream, Multimap<Throwable, Problem> problems) {
-        return new DefaultProblemReporter(emitter, problemStream, currentBuildOperationRef, problems);
+    @Nonnull
+    private DefaultProblemReporter createReporter() {
+        return new DefaultProblemReporter(problemSummarizer, problemStream, currentBuildOperationRef, additionalDataBuilderFactory);
     }
 
     @Override
@@ -71,7 +64,7 @@ public class DefaultProblems implements InternalProblems {
     }
 
     @Override
-    public Multimap<Throwable, Problem> getProblemsForThrowables() {
-        return problemsForThrowables;
+    public AdditionalDataBuilderFactory getAdditionalDataBuilderFactory() {
+        return additionalDataBuilderFactory;
     }
 }

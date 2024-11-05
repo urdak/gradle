@@ -41,7 +41,7 @@ import org.gradle.api.internal.artifacts.ivyservice.ivyresolve.strategy.VersionS
 import org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.results.VisitedGraphResults;
 import org.gradle.api.internal.artifacts.resolver.ResolutionOutputsInternal;
 import org.gradle.api.internal.attributes.AttributeContainerInternal;
-import org.gradle.api.internal.attributes.ImmutableAttributesFactory;
+import org.gradle.api.internal.attributes.AttributesFactory;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.provider.ProviderFactory;
@@ -237,7 +237,6 @@ public abstract class DependencyInsightReportTask extends DefaultTask {
      * This method is exposed to the command line interface. Example usage:
      * <pre>gradle dependencyInsight --configuration runtime --dependency slf4j</pre>
      */
-    @ToBeReplacedByLazyProperty
     @Option(option = "configuration", description = "Looks for the dependency in given configuration.")
     public void setConfiguration(@Nullable String configurationName) {
         setConfiguration(
@@ -316,13 +315,28 @@ public abstract class DependencyInsightReportTask extends DefaultTask {
     }
 
     /**
-     * An injected {@link ImmutableAttributesFactory}.
+     * An injected {@link AttributesFactory}.
      *
      * @since 4.9
      */
+    @Deprecated
+    @SuppressWarnings("DeprecatedIsStillUsed")
     @Inject
-    protected ImmutableAttributesFactory getAttributesFactory() {
+    protected AttributesFactory getImmutableAttributesFactory() {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * An injected {@link AttributesFactory}.
+     * <p>
+     * Previously named {@code getImmutableAttributesFactory}, this method has been renamed for better internal alignment.
+     *
+     * @since 8.12
+     */
+    @Internal
+    @Incubating
+    protected AttributesFactory getAttributesFactory() {
+        return getImmutableAttributesFactory();
     }
 
     @TaskAction
@@ -427,9 +441,9 @@ public abstract class DependencyInsightReportTask extends DefaultTask {
     private static final class RootDependencyRenderer implements NodeRenderer {
         private final DependencyInsightReportTask task;
         private final AttributeContainer configurationAttributes;
-        private final ImmutableAttributesFactory attributesFactory;
+        private final AttributesFactory attributesFactory;
 
-        public RootDependencyRenderer(DependencyInsightReportTask task, AttributeContainer configurationAttributes, ImmutableAttributesFactory attributesFactory) {
+        public RootDependencyRenderer(DependencyInsightReportTask task, AttributeContainer configurationAttributes, AttributesFactory attributesFactory) {
             this.task = task;
             this.configurationAttributes = configurationAttributes;
             this.attributesFactory = attributesFactory;
