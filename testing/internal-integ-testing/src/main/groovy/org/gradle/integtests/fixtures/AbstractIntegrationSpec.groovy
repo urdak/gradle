@@ -20,9 +20,9 @@ import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.Config
 import org.gradle.api.Action
 import org.gradle.api.internal.DocumentationRegistry
-import org.gradle.api.problems.ProblemId
 import org.gradle.api.problems.internal.DefaultProblemProgressDetails
 import org.gradle.api.problems.internal.DefaultProblemsSummaryProgressDetails
+import org.gradle.api.problems.internal.ProblemSummaryData
 import org.gradle.integtests.fixtures.build.BuildTestFile
 import org.gradle.integtests.fixtures.build.BuildTestFixture
 import org.gradle.integtests.fixtures.configurationcache.ConfigurationCacheBuildOperationsFixture
@@ -39,7 +39,6 @@ import org.gradle.integtests.fixtures.executer.UnderDevelopmentGradleDistributio
 import org.gradle.integtests.fixtures.problems.KnownProblemIds
 import org.gradle.integtests.fixtures.problems.ReceivedProblem
 import org.gradle.integtests.fixtures.timeout.IntegrationTestTimeout
-import org.gradle.internal.Pair
 import org.gradle.test.fixtures.dsl.GradleDsl
 import org.gradle.test.fixtures.file.CleanupTestDirectory
 import org.gradle.test.fixtures.file.TestFile
@@ -72,7 +71,7 @@ import static org.gradle.util.Matchers.matchesRegexp
 @CleanupTestDirectory
 @SuppressWarnings("IntegrationTestFixtures")
 @IntegrationTestTimeout(DEFAULT_TIMEOUT_SECONDS)
-abstract class AbstractIntegrationSpec extends Specification implements LanguageSpecificTestFileFixture {
+abstract class AbstractIntegrationSpec extends Specification implements LanguageSpecificTestFileFixture, HasGradleExecutor {
 
     @Rule
     public final TestNameTestDirectoryProvider temporaryFolder = new TestNameTestDirectoryProvider(getClass())
@@ -90,11 +89,20 @@ abstract class AbstractIntegrationSpec extends Specification implements Language
     GradleExecuter getExecuter() {
         if (executor == null) {
             executor = createExecuter()
-            if (ignoreCleanupAssertions) {
-                executor.ignoreCleanupAssertions()
-            }
         }
         return executor
+    }
+
+    /**
+     * Applies configuration that needs to be applied
+     * every time an executer runs.
+     *
+     * May be overwritten. In most cases, the overrides should ensure to invoke the base implementation.
+     */
+    protected void setupExecuter() {
+        if (ignoreCleanupAssertions) {
+            executor.ignoreCleanupAssertions()
+        }
     }
 
     BuildTestFixture buildTestFixture = new BuildTestFixture(temporaryFolder)
@@ -446,6 +454,7 @@ tmpdir is currently ${System.getProperty("java.io.tmpdir")}""")
     }
 
     protected ExecutionResult succeeds(String... tasks) {
+        setupExecuter()
         resetProblemApiCheck()
 
         result = executer.withTasks(*tasks).run()
@@ -494,6 +503,7 @@ tmpdir is currently ${System.getProperty("java.io.tmpdir")}""")
     }
 
     protected ExecutionFailure fails(List<String> tasks) {
+        setupExecuter()
         resetProblemApiCheck()
 
         failure = executer.withTasks(tasks).runWithFailure()
@@ -750,6 +760,10 @@ tmpdir is currently ${System.getProperty("java.io.tmpdir")}""")
         recreateExecuter()
     }
 
+    BuildOperationsFixture newBuildOperationsFixture() {
+        new BuildOperationsFixture(executer, temporaryFolder)
+    }
+
     def resetProblemApiCheck() {
         // By nulling out the receivedProblems, upon calling getReceivedProblems() we will re-fetch the problems from the build operations fixture.
         receivedProblems = null
@@ -793,7 +807,7 @@ tmpdir is currently ${System.getProperty("java.io.tmpdir")}""")
         }
     }
 
-    List<Pair<ProblemId, Integer>> getProblemSummaries() {
+    List<List<ProblemSummaryData>> getProblemSummaries() {
         if (!enableProblemsApiCheck) {
             throw new IllegalStateException('Problems API check is not enabled')
         }

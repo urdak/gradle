@@ -16,7 +16,6 @@
 
 package org.gradle.problems.internal.services;
 
-import org.gradle.api.problems.internal.DefaultProblemSummarizer;
 import org.gradle.internal.service.ServiceRegistration;
 import org.gradle.internal.service.scopes.AbstractGradleModuleServices;
 
@@ -30,6 +29,10 @@ public class ProblemsServices extends AbstractGradleModuleServices {
     @Override
     public void registerBuildTreeServices(ServiceRegistration registration) {
         registration.addProvider(new ProblemsBuildTreeServices());
-        registration.add(DefaultProblemSummarizer.class);
+    }
+
+    @Override
+    public void registerBuildSessionServices(ServiceRegistration registration) {
+        registration.addProvider(new ProblemsBuildSessionServices());
     }
 }

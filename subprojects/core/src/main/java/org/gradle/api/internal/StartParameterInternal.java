@@ -35,12 +35,13 @@ public class StartParameterInternal extends StartParameter {
     private Option.Value<Boolean> isolatedProjects = Option.Value.defaultValue(false);
     private ConfigurationCacheProblemsOption.Value configurationCacheProblems = ConfigurationCacheProblemsOption.Value.FAIL;
     private boolean configurationCacheDebug;
-    private boolean configurationCacheIgnoreInputsInTaskGraphSerialization = false;
+    private boolean configurationCacheIgnoreInputsDuringStore = false;
     private int configurationCacheMaxProblems = 512;
     private @Nullable String configurationCacheIgnoredFileSystemCheckInputs = null;
     private boolean configurationCacheParallel;
     private boolean configurationCacheRecreateCache;
     private boolean configurationCacheQuiet;
+    private int configurationCacheEntriesPerKey = 1;
     private boolean searchUpwards = true;
     private boolean useEmptySettings = false;
     private Duration continuousBuildQuietPeriod = Duration.ofMillis(250);
@@ -78,6 +79,7 @@ public class StartParameterInternal extends StartParameter {
         p.configurationCacheParallel = configurationCacheParallel;
         p.configurationCacheRecreateCache = configurationCacheRecreateCache;
         p.configurationCacheQuiet = configurationCacheQuiet;
+        p.configurationCacheEntriesPerKey = configurationCacheEntriesPerKey;
         p.searchUpwards = searchUpwards;
         p.useEmptySettings = useEmptySettings;
         p.enableProblemReportGeneration = enableProblemReportGeneration;
@@ -175,12 +177,12 @@ public class StartParameterInternal extends StartParameter {
         this.configurationCacheDebug = configurationCacheDebug;
     }
 
-    public boolean isConfigurationCacheIgnoreInputsInTaskGraphSerialization() {
-        return configurationCacheIgnoreInputsInTaskGraphSerialization;
+    public boolean isConfigurationCacheIgnoreInputsDuringStore() {
+        return configurationCacheIgnoreInputsDuringStore;
     }
 
-    public void setConfigurationCacheIgnoreInputsInTaskGraphSerialization(boolean ignoreInputsInTaskGraphSerialization) {
-        configurationCacheIgnoreInputsInTaskGraphSerialization = ignoreInputsInTaskGraphSerialization;
+    public void setConfigurationCacheIgnoreInputsDuringStore(boolean ignoreInputsDuringStore) {
+        configurationCacheIgnoreInputsDuringStore = ignoreInputsDuringStore;
     }
 
     public boolean isConfigurationCacheParallel() {
@@ -189,6 +191,14 @@ public class StartParameterInternal extends StartParameter {
 
     public void setConfigurationCacheParallel(boolean parallel) {
         this.configurationCacheParallel = parallel;
+    }
+
+    public int getConfigurationCacheEntriesPerKey() {
+        return configurationCacheEntriesPerKey;
+    }
+
+    public void setConfigurationCacheEntriesPerKey(int configurationCacheEntriesPerKey) {
+        this.configurationCacheEntriesPerKey = configurationCacheEntriesPerKey;
     }
 
     public int getConfigurationCacheMaxProblems() {

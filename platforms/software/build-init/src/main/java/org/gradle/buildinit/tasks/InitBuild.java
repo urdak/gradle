@@ -316,6 +316,11 @@ public abstract class InitBuild extends DefaultTask {
     private void doInitSpecProjectGeneration(UserInputHandler inputHandler) {
         BuildInitConfig config = inputHandler.askUser(this::selectAndConfigureSpec).get();
         BuildInitGenerator generator = createGenerator(config);
+        boolean userInterrupted = inputHandler.interrupted();
+        if (userInterrupted) {
+            throw new BuildCancelledException();
+        }
+        getLogger().lifecycle("Generate '{}'", config.getBuildSpec().getDisplayName());
         Directory projectDirectory = projectDir.get();
         generator.generate(config, projectDirectory);
         generateWrapper(projectDirectory);

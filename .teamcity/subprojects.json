@@ -233,7 +233,7 @@
   {
     "name": "configuration-problems-base",
     "path": "platforms/core-configuration/configuration-problems-base",
-    "unitTests": false,
+    "unitTests": true,
     "functionalTests": false,
     "crossVersionTests": false
   },
@@ -1348,6 +1348,13 @@
     "path": "platforms/software/version-control",
     "unitTests": true,
     "functionalTests": true,
+    "crossVersionTests": false
+  },
+  {
+    "name": "versioned-cache",
+    "path": "platforms/core-runtime/versioned-cache",
+    "unitTests": true,
+    "functionalTests": false,
     "crossVersionTests": false
   },
   {

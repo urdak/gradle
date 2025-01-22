@@ -24,8 +24,8 @@ import org.gradle.internal.declarativedsl.evaluator.DeclarativeKotlinScriptEvalu
 import org.gradle.internal.declarativedsl.evaluator.GradleProcessInterpretationSchemaBuilder
 import org.gradle.internal.declarativedsl.evaluator.MemoizedInterpretationSchemaBuilder
 import org.gradle.internal.declarativedsl.evaluator.StoringInterpretationSchemaBuilder
-import org.gradle.internal.declarativedsl.evaluator.defaults.DeclarativeModelDefaultsHandler
 import org.gradle.internal.declarativedsl.evaluator.defaultDeclarativeScriptEvaluator
+import org.gradle.internal.declarativedsl.evaluator.defaults.DeclarativeModelDefaultsHandler
 import org.gradle.internal.declarativedsl.evaluator.schema.InterpretationSchemaBuilder
 import org.gradle.internal.event.ListenerManager
 import org.gradle.internal.service.Provides
@@ -41,17 +41,13 @@ class DeclarativeDslServices : AbstractGradleModuleServices() {
     override fun registerBuildServices(registration: ServiceRegistration) {
         registration.addProvider(BuildServices)
     }
-
-    override fun registerProjectServices(registration: ServiceRegistration) {
-        registration.addProvider(ProjectServices)
-    }
 }
 
 
 internal
 object BuildServices : ServiceRegistrationProvider {
 
-    fun configure(listenerManager: ListenerManager, serviceRegistration: ServiceRegistration){
+    fun configure(listenerManager: ListenerManager, serviceRegistration: ServiceRegistration) {
         serviceRegistration.add(SettingsUnderInitialization::class.java, SettingsUnderInitialization(listenerManager))
     }
 
@@ -69,17 +65,11 @@ object BuildServices : ServiceRegistrationProvider {
         buildLayoutFactory: BuildLayoutFactory,
         settingsUnderInitialization: SettingsUnderInitialization,
         gradleInternal: GradleInternal
-    ) = MemoizedInterpretationSchemaBuilder(
-        StoringInterpretationSchemaBuilder(GradleProcessInterpretationSchemaBuilder(settingsUnderInitialization::instance, softwareTypeRegistry), buildLayoutFactory.settingsDir(gradleInternal))
-    )
+    ): InterpretationSchemaBuilder =
+        MemoizedInterpretationSchemaBuilder(
+            StoringInterpretationSchemaBuilder(GradleProcessInterpretationSchemaBuilder(settingsUnderInitialization::instance, softwareTypeRegistry), buildLayoutFactory.settingsDir(gradleInternal))
+        )
 
-    private
-    fun BuildLayoutFactory.settingsDir(gradle: GradleInternal): File =
-        getLayoutFor(BuildLayoutConfiguration(gradle.startParameter)).settingsDir
-}
-
-internal
-object ProjectServices : ServiceRegistrationProvider {
     @Provides
     fun createDeclarativeModelDefaultsHandler(
         softwareTypeRegistry: SoftwareTypeRegistry,
@@ -87,4 +77,8 @@ object ProjectServices : ServiceRegistrationProvider {
     ): ModelDefaultsHandler {
         return objectFactory.newInstance(DeclarativeModelDefaultsHandler::class.java, softwareTypeRegistry)
     }
+
+    private
+    fun BuildLayoutFactory.settingsDir(gradle: GradleInternal): File =
+        getLayoutFor(BuildLayoutConfiguration(gradle.startParameter)).settingsDir
 }

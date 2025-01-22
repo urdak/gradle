@@ -122,6 +122,22 @@ public enum OperationType {
     TEST_OUTPUT,
 
     /**
+     * Flag for test metadata events.
+     * <p>
+     * Clients must subscribe to {@link #TEST} events too if they want to receive test metadata events.
+     * </p>
+     *
+     * The following events are currently issued for this operation type.
+     * <ul>
+     *     <li>{@link org.gradle.tooling.events.test.TestMetadataEvent}</li>
+     * </ul>
+     *
+     * @since 8.13
+     */
+    @Incubating
+    TEST_METADATA,
+
+    /**
      * Flag for file download progress events. This includes various types of files, for example files downloaded during dependency resolution,
      * Gradle distribution downloads, and Java toolchain downloads.
      *
@@ -167,5 +183,20 @@ public enum OperationType {
      * @since 8.4
      */
     @Incubating
-    PROBLEMS
+    PROBLEMS,
+
+    /**
+     * Flag for the topmost progress event.
+     * <p>
+     * Using this operation type is useful for capturing the build failure details from the finish event.
+     *
+     * The following events are currently issued for this operation type.
+     * <ul>
+     *     <li>{@link StartEvent}</li>
+     *     <li>{@link FinishEvent}</li>
+     * </ul>
+     * @since 8.12
+     */
+    @Incubating
+    ROOT
 }

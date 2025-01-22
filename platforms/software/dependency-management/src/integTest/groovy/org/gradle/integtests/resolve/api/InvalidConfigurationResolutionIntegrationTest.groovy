@@ -33,29 +33,28 @@ class InvalidConfigurationResolutionIntegrationTest extends AbstractIntegrationS
 
         buildFile << """
             repositories {
-                maven { url "${mavenRepo.uri}" }
+                maven { url = "${mavenRepo.uri}" }
             }
-            allprojects {
-                configurations {
-                    implementation
-                    compile.canBeDeclared = false
-                    compile.canBeConsumed = false
-                    compile.canBeResolved = false
-                    compileOnly.canBeResolved = false
-                    apiElements {
-                        assert canBeConsumed
-                        canBeResolved = false
-                        extendsFrom compile
-                        extendsFrom compileOnly
-                        extendsFrom implementation
-                    }
-                    compileClasspath {
-                        canBeConsumed = false
-                        assert canBeResolved
-                        extendsFrom compile
-                        extendsFrom compileOnly
-                        extendsFrom implementation
-                    }
+
+            configurations {
+                implementation
+                compile.canBeDeclared = false
+                compile.canBeConsumed = false
+                compile.canBeResolved = false
+                compileOnly.canBeResolved = false
+                apiElements {
+                    assert canBeConsumed
+                    canBeResolved = false
+                    extendsFrom compile
+                    extendsFrom compileOnly
+                    extendsFrom implementation
+                }
+                compileClasspath {
+                    canBeConsumed = false
+                    assert canBeResolved
+                    extendsFrom compile
+                    extendsFrom compileOnly
+                    extendsFrom implementation
                 }
             }
         """

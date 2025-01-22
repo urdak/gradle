@@ -17,7 +17,6 @@
 package org.gradle.initialization;
 
 import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
 import org.gradle.api.Transformer;
 import org.gradle.api.artifacts.verification.DependencyVerificationMode;
 import org.gradle.api.internal.StartParameterInternal;
@@ -37,12 +36,13 @@ import org.gradle.internal.watch.registry.WatchMode;
 
 import java.io.File;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class StartParameterBuildOptions extends BuildOptionSet<StartParameterInternal> {
 
-    private static List<BuildOption<StartParameterInternal>> options = ImmutableList.of(
+    private static List<BuildOption<StartParameterInternal>> options = Arrays.asList(
         new ProjectCacheDirOption(),
         new RerunTasksOption(),
         new ProfileOption(),
@@ -70,13 +70,14 @@ public class StartParameterBuildOptions extends BuildOptionSet<StartParameterInt
         new ExportKeysOption(),
         new ConfigurationCacheProblemsOption(),
         new ConfigurationCacheOption(),
-        new ConfigurationCacheIgnoreInputsInTaskGraphSerialization(),
+        new ConfigurationCacheIgnoreInputsDuringStore(),
         new ConfigurationCacheMaxProblemsOption(),
         new ConfigurationCacheIgnoredFileSystemCheckInputs(),
         new ConfigurationCacheDebugOption(),
         new ConfigurationCacheParallelOption(),
         new ConfigurationCacheRecreateOption(),
         new ConfigurationCacheQuietOption(),
+        new ConfigurationCacheEntriesPerKeyOption(),
         new IsolatedProjectsOption(),
         new ProblemReportGenerationOption(),
         new PropertyUpgradeReportOption()
@@ -513,17 +514,17 @@ public class StartParameterBuildOptions extends BuildOptionSet<StartParameterInt
         }
     }
 
-    public static class ConfigurationCacheIgnoreInputsInTaskGraphSerialization extends BooleanBuildOption<StartParameterInternal> {
+    public static class ConfigurationCacheIgnoreInputsDuringStore extends BooleanBuildOption<StartParameterInternal> {
 
         public static final String PROPERTY_NAME = "org.gradle.configuration-cache.inputs.unsafe.ignore.in-serialization";
 
-        public ConfigurationCacheIgnoreInputsInTaskGraphSerialization() {
+        public ConfigurationCacheIgnoreInputsDuringStore() {
             super(PROPERTY_NAME);
         }
 
         @Override
         public void applyTo(boolean value, StartParameterInternal settings, Origin origin) {
-            settings.setConfigurationCacheIgnoreInputsInTaskGraphSerialization(value);
+            settings.setConfigurationCacheIgnoreInputsDuringStore(value);
         }
     }
 
@@ -585,7 +586,20 @@ public class StartParameterBuildOptions extends BuildOptionSet<StartParameterInt
         public void applyTo(boolean value, StartParameterInternal settings, Origin origin) {
             settings.setConfigurationCacheParallel(value);
         }
+    }
 
+    public static class ConfigurationCacheEntriesPerKeyOption extends IntegerBuildOption<StartParameterInternal> {
+
+        public static final String PROPERTY_NAME = "org.gradle.configuration-cache.entries-per-key";
+
+        public ConfigurationCacheEntriesPerKeyOption() {
+            super(PROPERTY_NAME);
+        }
+
+        @Override
+        public void applyTo(int value, StartParameterInternal settings, Origin origin) {
+            settings.setConfigurationCacheEntriesPerKey(value);
+        }
     }
 
     public static class ConfigurationCacheRecreateOption extends BooleanBuildOption<StartParameterInternal> {

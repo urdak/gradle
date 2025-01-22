@@ -28,9 +28,10 @@ pluginManagement {
 
 plugins {
     id("gradlebuild.build-environment")
-    id("com.gradle.develocity").version("3.18.1") // Run `java build-logic-settings/UpdateDevelocityPluginVersion.java <new-version>` to update
+    id("gradlebuild.configuration-cache-compatibility")
+    id("com.gradle.develocity").version("3.19.1-rc-2") // Run `java build-logic-settings/UpdateDevelocityPluginVersion.java <new-version>` to update
     id("io.github.gradle.gradle-enterprise-conventions-plugin").version("0.10.2")
-    id("org.gradle.toolchains.foojay-resolver-convention").version ("0.8.0")
+    id("org.gradle.toolchains.foojay-resolver-convention").version("0.9.0")
 }
 
 includeBuild("build-logic-commons")
@@ -118,6 +119,7 @@ val core = platform("core") {
         subproject("service-registry-impl")
         subproject("time")
         subproject("tooling-api-provider")
+        subproject("versioned-cache")
         subproject("wrapper-main")
         subproject("wrapper-shared")
     }

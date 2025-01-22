@@ -17,35 +17,46 @@
 package org.gradle.api.problems.internal;
 
 import org.gradle.api.Action;
+import org.gradle.api.problems.Problem;
+import org.gradle.api.problems.ProblemId;
 import org.gradle.api.problems.ProblemSpec;
+import org.gradle.internal.exception.ExceptionAnalyser;
 import org.gradle.internal.operations.CurrentBuildOperationRef;
 import org.gradle.internal.operations.OperationIdentifier;
 import org.gradle.problems.buildtree.ProblemStream;
 
 import javax.annotation.Nonnull;
+import java.util.Collection;
 
 public class DefaultProblemReporter implements InternalProblemReporter {
 
     private final ProblemSummarizer problemSummarizer;
     private final ProblemStream problemStream;
     private final CurrentBuildOperationRef currentBuildOperationRef;
+    private final ExceptionProblemRegistry exceptionProblemRegistry;
     private final AdditionalDataBuilderFactory additionalDataBuilderFactory;
+    private final ExceptionAnalyser exceptionAnalyser;
 
     public DefaultProblemReporter(
         ProblemSummarizer problemSummarizer,
         ProblemStream problemStream,
         CurrentBuildOperationRef currentBuildOperationRef,
-        AdditionalDataBuilderFactory additionalDataBuilderFactory
+        AdditionalDataBuilderFactory additionalDataBuilderFactory,
+        ExceptionProblemRegistry exceptionProblemRegistry,
+        ExceptionAnalyser exceptionAnalyser
     ) {
         this.problemSummarizer = problemSummarizer;
         this.problemStream = problemStream;
         this.currentBuildOperationRef = currentBuildOperationRef;
+        this.exceptionProblemRegistry = exceptionProblemRegistry;
         this.additionalDataBuilderFactory = additionalDataBuilderFactory;
+        this.exceptionAnalyser = exceptionAnalyser;
     }
 
     @Override
-    public void reporting(Action<ProblemSpec> spec) {
+    public void report(ProblemId problemId, Action<? super ProblemSpec> spec) {
         DefaultProblemBuilder problemBuilder = createProblemBuilder();
+        problemBuilder.id(problemId);
         spec.execute(problemBuilder);
         report(problemBuilder.build());
     }
@@ -56,30 +67,48 @@ public class DefaultProblemReporter implements InternalProblemReporter {
     }
 
     @Override
-    public RuntimeException throwing(Action<ProblemSpec> spec) {
+    public RuntimeException throwing(Throwable exception, ProblemId problemId, Action<? super ProblemSpec> spec) {
         DefaultProblemBuilder problemBuilder = createProblemBuilder();
+        problemBuilder.id(problemId);
         spec.execute(problemBuilder);
-
-        Problem problem = problemBuilder.build();
-        Throwable exception = problem.getException();
-        if (exception == null) {
-            throw new IllegalStateException("Exception must be non-null");
-        } else {
-            throw throwError(exception, problem);
-        }
+        problemBuilder.withException(exception);
+        report(problemBuilder.build());
+        throw runtimeException(exception);
     }
 
-    private RuntimeException throwError(Throwable exception, Problem problem) {
+    @Override
+    public RuntimeException throwing(Throwable exception, Problem problem) {
+        problem = ((InternalProblem) problem).toBuilder(additionalDataBuilderFactory).withException(transform(exception)).build();
         report(problem);
+        throw runtimeException(exception);
+    }
+
+    @Override
+    public RuntimeException throwing(Throwable exception, Collection<? extends Problem> problems) {
+        for (Problem problem : problems) {
+            report(((InternalProblem) problem).toBuilder(additionalDataBuilderFactory).withException(transform(exception)).build());
+        }
+        throw runtimeException(exception);
+    }
+
+    private static RuntimeException runtimeException(Throwable exception) {
         if (exception instanceof RuntimeException) {
             return (RuntimeException) exception;
         } else {
-            throw new RuntimeException(exception);
+            return new RuntimeException(exception);
         }
     }
 
     @Override
-    public Problem create(Action<InternalProblemSpec> action) {
+    public Problem create(ProblemId problemId, Action<? super ProblemSpec> action) {
+        DefaultProblemBuilder defaultProblemBuilder = createProblemBuilder();
+        defaultProblemBuilder.id(problemId);
+        action.execute(defaultProblemBuilder);
+        return defaultProblemBuilder.build();
+    }
+
+    @Override
+    public Problem internalCreate(Action<? super InternalProblemSpec> action) {
         DefaultProblemBuilder defaultProblemBuilder = createProblemBuilder();
         action.execute(defaultProblemBuilder);
         return defaultProblemBuilder.build();
@@ -101,6 +130,13 @@ public class DefaultProblemReporter implements InternalProblemReporter {
         }
     }
 
+    @Override
+    public void report(Collection<? extends Problem> problems) {
+        for (Problem problem : problems) {
+            report(problem);
+        }
+    }
+
     /**
      * Reports a problem with an explicit operation identifier.
      * <p>
@@ -112,6 +148,23 @@ public class DefaultProblemReporter implements InternalProblemReporter {
      */
     @Override
     public void report(Problem problem, OperationIdentifier id) {
+        String taskPath = ProblemTaskPathTracker.getTaskIdentityPath();
+        problem = taskPath == null ? problem : ((InternalProblem) problem).toBuilder(additionalDataBuilderFactory).taskPathLocation(taskPath).build();
+        Throwable exception = problem.getException();
+        if (exception != null) {
+            exceptionProblemRegistry.onProblem(transform(exception), problem);
+        }
         problemSummarizer.emit(problem, id);
+    }
+
+    private Throwable transform(Throwable failure) {
+        if (exceptionAnalyser == null) {
+            return failure;
+        }
+        try {
+            return exceptionAnalyser.transform(failure).getCause();
+        } catch (Throwable e) {
+            throw new RuntimeException(e);
+        }
     }
 }

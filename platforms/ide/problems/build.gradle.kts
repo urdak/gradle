@@ -65,9 +65,16 @@ dependencies {
     implementation(projects.logging)
     implementation(projects.messaging)
 
+    implementation(libs.guava)
+
     testImplementation(projects.stdlibKotlinExtensions)
 
     testImplementation(libs.junit)
+
+    testImplementation(libs.mockitoKotlin)
+    testImplementation(libs.kotlinReflect)
+    testImplementation(libs.mockitoKotlin2)
+    testImplementation(libs.mockitoCore)
 
     integTestImplementation(projects.internalTesting)
     integTestImplementation(testFixtures(projects.logging))
