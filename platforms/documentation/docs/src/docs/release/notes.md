@@ -10,15 +10,7 @@
 <meta name="twitter:description" content="TBD">
 <meta name="twitter:image" content="https://gradle.org/images/releases/gradle-8.13.png">
 
-Gradle @version@ is the first patch release for Gradle 8.12.
-
-It fixes the following issues:
-
-* TODO
-
-We recommend users upgrade to @version@ instead of 8.12.
-
-***
+The Gradle team is excited to announce Gradle @version@.
 
 This release features [1](), [2](), ... [n](), and more.
 
@@ -172,6 +164,12 @@ The following are the features that have been promoted in this Gradle release.
 <!--
 ### Example promoted
 -->
+
+### Strongly-typed `dependencies` block API
+The [strongly-typed `dependencies` block API](userguide/implementing_gradle_plugins_binary.html#custom_dependencies_blocks) introduced in Gradle 7.6 
+is now partially stable. Version catalog dependencies remain under review for potential changes.
+
+This API enables plugin authors to create custom DSL-like `dependencies` blocks, similar to the top-level `dependencies` block in a build script.
 
 ## Fixed issues
 
